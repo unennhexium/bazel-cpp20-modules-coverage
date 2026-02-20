@@ -1,16 +1,22 @@
 .PHONY: sym mod nomod check convert query
 
+pack := "modules"
+
 # Symlink standard library module into "src" directory.
 sym:
 	ln -s /usr/lib/llvm-*/share/libc++/v1 std
 
 # Create coverage files for C++20 modules subproject.
 mod:
-	bazel coverage --config=coverage //modules:test
+	make cov package=modules
 
 # Create coverage files for subproject not using C++20 modules.
 nomod:
-	bazel coverage --config=coverage //no_modules:test
+	make cov package=no_modules
+
+# Produce coverage files.
+cov:
+	bazel coverage --config=coverage //$(pack):test
 
 # Check the content of coverage output directories and coverage file.
 check:
@@ -25,6 +31,6 @@ convert:
 
 # Perform query on coverage test target using C++20 modules.
 query:
-	bazel cquery --output=starlark --starlark:file=query.py --config=coverage //modules:test
+	bazel cquery --output=starlark --starlark:file=query.py --config=coverage //$(pack):test
 
 # FIXME: `--branch-coverage` - gives an error on "//modules:test" target coverage data.
