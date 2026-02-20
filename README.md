@@ -1,3 +1,5 @@
+# Minimal example
+
 ```console
 $ lsb_release -a
 No LSB modules are available.
@@ -18,6 +20,8 @@ $
 $ genhtml --version
 genhtml: LCOV version 2.0-1
 ```
+
+## `genhtml` results
 
 <details>
   <summary><code>make nomod convert</code></summary>
