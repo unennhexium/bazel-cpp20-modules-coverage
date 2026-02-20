@@ -1,4 +1,4 @@
-common --symlink_prefix=bazel
+common --symlink_prefix=bazel-
 common --experimental_convenience_symlinks=normal
 
 build --config=clang --experimental_cpp_modules
