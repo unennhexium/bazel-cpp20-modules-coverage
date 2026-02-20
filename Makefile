@@ -4,7 +4,7 @@ pack := "modules"
 
 # Symlink standard library module into "src" directory.
 sym:
-	ln -s /usr/lib/llvm-*/share/libc++/v1 std
+	ln -vfs /usr/lib/llvm-*/share/libc++/v1 std
 
 # Create coverage files for C++20 modules subproject.
 mod:
