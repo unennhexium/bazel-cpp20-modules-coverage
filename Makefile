@@ -31,6 +31,8 @@ convert:
 
 # Perform query on coverage test target using C++20 modules.
 query:
-	bazel cquery --output=starlark --starlark:file=query.py --config=coverage //$(pack):test
+	bazel cquery --output=starlark \
+		--starlark:expr='providers(target)["InstrumentedFilesInfo"]' \
+		--config=coverage //$(pack):test
 
 # FIXME: `--branch-coverage` - gives an error on "//modules:test" target coverage data.
