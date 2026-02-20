@@ -1,0 +1,11 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+cc_library(
+    name = "std",
+    srcs = glob(["std/std/*.inc"]),
+    copts = ["-Wno-reserved-module-identifier"],
+    features = ["cpp_modules"],
+    linkopts = [],
+    module_interfaces = ["std/std.cppm"],
+    visibility = ["//visibility:public"],
+)

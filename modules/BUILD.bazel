@@ -1,0 +1,34 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_test")
+
+cc_binary(
+    copts = [],
+    deps = [":lib"],
+    features = ["cpp_modules"],
+    linkopts = [],
+    name = "main",
+    srcs = ["main.cpp"],
+)
+
+cc_binary(
+    copts = [],
+    deps = ["//:std"],
+    features = ["cpp_modules"],
+    linkopts = [],
+    module_interfaces = ["lib.cppm"],
+    name = "lib",
+    srcs = [],
+)
+
+cc_test(
+    copts = [],
+    deps = [
+        "//:std",
+        "@googletest//:gtest_main",
+        "@googletest//:gtest",
+    ],
+    features = ["cpp_modules"],
+    linkopts = [],
+    module_interfaces = ["lib.cppm"],
+    name = "test",
+    srcs = ["test.cpp"],
+)
