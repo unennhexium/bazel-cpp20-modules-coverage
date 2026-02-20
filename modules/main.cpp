@@ -7,5 +7,6 @@ auto main() -> int {
   } catch (std::exception const &e) {
     std::cout << e.what() << "\n";
     return 1;
+  }
   return 0;
 }
