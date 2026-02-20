@@ -19,6 +19,11 @@ build --output_filter='^(?!@googletest//.*)$' # Supress warning from compilation
 
 # NOTE: These are 'common' flags to be used with cquery.
 
+# No effect.
+common:coverage --features=coverage_enabled
+common:coverage --combined_report=lcov # `lcov` is the only and the defeault value supported at this time.
+# common:coverage --test_env=LLVM_PROFILE_FILE=%t.profraw
+
 # Important: 0-sized coverage files, no-data without this flag.
 common:coverage --instrument_test_targets
 
