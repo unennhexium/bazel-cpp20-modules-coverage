@@ -1,4 +1,4 @@
-.PHONY: sym mod nomod check convert query
+.PHONY: sym mod nomod cov check convert query
 
 pack := "modules"
 
@@ -8,11 +8,11 @@ sym:
 
 # Create coverage files for C++20 modules subproject.
 mod:
-	make cov package=modules
+	make cov pack=modules
 
 # Create coverage files for subproject not using C++20 modules.
 nomod:
-	make cov package=no_modules
+	make cov pack=no_modules
 
 # Produce coverage files.
 cov:
