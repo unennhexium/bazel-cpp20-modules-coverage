@@ -39,3 +39,5 @@ common:coverage --linkopt=-fprofile-instr-generate
 coverage:inpsect --test_output=all
 coverage:inpsect --test_summary=detailed
 coverage:inspect --subcommands
+
+common --sandbox_debug --verbose_failures --subcommands

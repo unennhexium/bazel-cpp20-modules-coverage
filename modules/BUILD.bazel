@@ -1,4 +1,15 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
+load("@preprocessing_tool//:preprocess_rule.bzl", "preprocess")
+
+preprocess(
+    name = "process_srcs",
+    srcs = glob(["*.cpp"]),
+)
+
+cc_binary(
+    name = "my_binary",
+    srcs = [":process_srcs"],
+)
 
 cc_binary(
     copts = [],
@@ -14,21 +25,65 @@ cc_library(
     deps = ["//:std"],
     features = ["cpp_modules"],
     linkopts = [],
-    module_interfaces = ["lib.cppm"],
+    module_interfaces = [":lib_pp"],
     name = "lib",
     srcs = [],
 )
 
-cc_test(
-    copts = [],
-    deps = [
-        ":lib",
-        "//:std",
-        "@googletest//:gtest_main",
-        "@googletest//:gtest",
-    ],
-    features = ["cpp_modules"],
-    linkopts = [],
-    name = "test",
+config_setting(
+    name = "do_cov",
+    values = {"define": "cov=1"},
+)
+
+preprocess(
+    name = "lib_pp",
+    srcs = ["lib.cppm"],
+    local_defines = select({
+        ":do_cov": ["COVERAGE"],
+        "//conditions:default": [],
+    }),
+    out_ext = select({
+        ":do_cov": "cpp", # (.cppm -> .cpp) Can be used as `srcs` argument.
+        "//conditions:default": "", # (.cppm -> .cppm) Keep existing extension.
+    }),
+    keep_comments = select({
+        "do_cov": True,
+        "//conditions:default": False
+    })
+)
+
+preprocess(
+    name = "test_pp",
     srcs = ["test.cpp"],
+    local_defines = select({
+        ":do_cov": ["COVERAGE"],
+        "//conditions:default": [],
+    }),
+    keep_comments = select({
+        "do_cov": False,
+        "//conditions:default": True
+    })
+)
+
+cc_test(
+    name = "test",
+    srcs = [":test_pp"] + select({
+        ":do_cov": [":lib_pp"],
+        "//conditions:default": [],
+    }),
+    copts = [],
+    features = select({
+        ":do_cov": [],
+        "//conditions:default": ["cpp_modules"],
+    }),
+    linkopts = [],
+    module_interfaces = select({
+        ":do_cov": [],
+        "//conditions:default": [":lib_pp"],
+    }),
+    deps = [
+        "//:std",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
 )

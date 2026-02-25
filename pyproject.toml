@@ -1,0 +1,10 @@
+[project]
+name = "single-file-pp"
+version = "0.1.0"
+description = "Preprocess single file w/o #include-s using Clang."
+readme = "README.md"
+requires-python = ">=3.15"
+dependencies = [
+    "more-itertools>=10.8.0",
+    "py-machineid>=1.0.0",
+]
