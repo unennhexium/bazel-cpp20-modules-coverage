@@ -5,14 +5,15 @@ NAME
     Preprocess C/C++ files ignoring #include-s.
 
 SYNOPSIS
-    ./main.py [-o | --out [-q | --queue] [-p | --poll]
+    ./main.py [-o | --out] [-q | --queue] [-p | --poll]
         [-s | --stage] [-r | --range] INPUT [INPUT...]
         [-p | --path] [-c | --clang] [-I | --ibuff] [-O | --obuff]
-            [-D | --define] [-C | --keep | --no-keep]
-        [-l | --log] [-R | --color] [-T | --truncate] [-W | --width]
+            [-D | --define] [-K | --keep | --no-keep]
+            [-P | --poll] [-U | --timeout]
+        [-l | --log] [-C | --color] [-E | --truncate] [-W | --width]
     ./main.py [-s | --script] INPUT [INPUT...]
     ./main.py [-t | --test] INPUT [INPUT...]
-    ./main.py [-E | --time] [-M | --mem] [-F | --filter] INPUT [INPUT...]
+    ./main.py [-T | --time] [-M | --mem] [-F | --filter] INPUT [INPUT...]
 
 DESCRIPTION
     pre stage
@@ -23,7 +24,7 @@ DESCRIPTION
     mid stage
 
     Process remaining derictives with clang preprocessor with -C specified
-    by default (see -C,--keep option) to retain comments and -P
+    by default (see -K,--keep option) to retain comments and -P
     to not include a line markers at the beggining of the file.
 
     post stage
@@ -40,15 +41,17 @@ options:
 input and output files:
   input                 input file path(s), use - to read from stdin; prepend
                         with @ to treat as file to read input file paths from
-                        (one per-line) (default: ['-'])
+                        (one per-line)
   -o, --out OUT         output file path, use - to output to stdout; prepend
                         with @ to treat as file to read output file paths from
-                        (one per-line) (default: ['-'])
+                        (one per-line) (default: None)
   -q, --queue SIZE      line queue size limit for comminicating with
                         clang; value <= 0 makes queue size unbound
                         (default: 0)
-  -P, --poll TIME       period [sec] for polling each io thread until it finished their
-                        work (default: 1.0)
+  -P, --poll SEC        period for polling each io thread until it finished their work
+                        (default: 1.0)
+  -U, --timeout SEC     time to wait until clang finished their work
+                        (default: 1.0)
   -t, --test            discard all output to /dev/null (default:
                         False)
 
@@ -57,8 +60,8 @@ selecting stages:
                         what stages to run (default:
                         ['full'])
   -S, --script SCRIPT   run shell scrpt instead of the default clang
-                        command (default: clang -E -P -C -o -
-                        -)
+                        command (see NOTES) (default:
+                        None)
 
 selecting lines:
   -r, --range RANGE [RANGE ...]
@@ -69,8 +72,7 @@ compiler settings:
   -p, --path EXEC       path to clang compiler (default: search in
                         $PATH) (default:
                         None)
-  -c, --clang ARG [ARG ...]
-                        arguments forwarder to clang (default:
+  -c, --clang ARG       argument forwarder to clang (default:
                         None)
   -I, --ibuff {def,line,zero}
                         buffering for clang process stdin (default:
@@ -80,23 +82,25 @@ compiler settings:
                         (default: def)
 
 preprocessor behavior:
-  -D, --define DEF [DEF ...]
-  -C, --keep, --no-keep
+  -D, --define DEF      clang preprocessor definitions (used for
+                        resolving #ifdef/#ifndef)
+                        (default: None)
+  -K, --keep, --no-keep
                         whether to add -C option to
                         clang preprocessor (default:
                         True)
 
 logging:
-  -l, --log [LEVEL]     minimal log level to output (default:
+  -l, --log LEVEL       minimal log level to output (default:
                         10)
-  -R, --color WHEN      when color the logs (default: auto)
-  -T, --truncate WHEN   when truncate the log line length (see also
+  -C, --color WHEN      when color the logs (default: auto)
+  -E, --truncate WHEN   when truncate the log line length (see also
                         -W,--width) (default:
                         always)
   -W, --width WIDTH     force terminal value to this value (see also
                         -T,--truncate) (default:
                         None)
-  -E, --time            measure the execution time using timeit module
+  -T, --time            measure the execution time using timeit module
                         (default: False)
   -M, --mem             print the memory footprint captured using
                         tracemalloc module using (default:
@@ -106,13 +110,16 @@ logging:
                         None)
 
 NOTES
+    The default clang command is clang -E -P -C -. See also -I, -O, -D and -S
+    options' description.
+
     -E,--time and -M--mem flags require at least WARNING (default) log level.
     The time and memory profiling result are printed as warning messages. This
     is expected when this flags are present.
 
     By default the first clang found in $PATH is used. Also see -p,--path option.
 
-    -I,--ibuff and -O,--outbuf options requre stdbuf executable to be in $PATH.
+    -I,--ibuff and -O,--outbuf options require stdbuf executable to be in $PATH.
 
 CAVEATS
     The script proces input files into output files in pairs. If the number
@@ -127,12 +134,10 @@ CAVEATS
     is not deterministic, that is each run likely to produce the new permutation
     of output lines.
 
-
 TIME MEASUREMENTS
-
-    % make llvm number_of_files=-0
+    % make gen_llvm
     total lines:
-    61464
+    2653
     % python -Om tool -tE @test_files.txt
     WARNING:MainThread:deco:21:wrap():started time counting
     WARNING:MainThread:deco:24:wrap():stopped time counting
@@ -142,39 +147,42 @@ TIME MEASUREMENTS
     user	0m9.563s
     sys	0m8.903s
 
-
 TRACING WITH llvm-project/9deb4fda30be47e4aea5671055a0f655a048afdc
+    The memory consumption is dominated by `threading` library. Queue's `put` is #6.
+    No matter whether its size is bound or unbound: Queue of size one consume the same
+    amount of memory as Queue of unbound size, though this was measured on relatvelly
+    small number of files.
 
-    % make llvm
+    % make gen_llvm
     total lines:
     2653
     % time -- python -Om tool -tEM @test_files.txt
     WARNING:MainThread:deco:44:wrap():started tracing
     WARNING:MainThread:deco:21:wrap():started time counting
     WARNING:MainThread:deco:24:wrap():stopped time counting
-    WARNING:MainThread:deco:28:wrap():total time in processing:0.916331 sec
+    WARNING:MainThread:deco:28:wrap():total time in processing:0.507604 sec
     WARNING:MainThread:pretty:43:display_top():top 10 lines
-    WARNING:MainThread:pretty:48:display_top():#1: /home/user/.local/share/uv/python/cpython-…
-    WARNING:MainThread:pretty:57:display_top():	_start_joinable_thread(self._bootstrap, handl…
-    WARNING:MainThread:pretty:48:display_top():#2: /home/user/.local/share/uv/python/cpython-…
-    WARNING:MainThread:pretty:57:display_top():	def __init__(self, args, bufsize=-1, executab…
-    WARNING:MainThread:pretty:48:display_top():#3: /home/user/.local/share/uv/python/cpython-…
-    WARNING:MainThread:pretty:57:display_top():	work_item = work_queue.get_nowait()
-    WARNING:MainThread:pretty:48:display_top():#4: /home/user/.local/share/uv/python/cpython-…
-    WARNING:MainThread:pretty:57:display_top():	def _execute_child(self, args, executable, pr…
-    WARNING:MainThread:pretty:48:display_top():#5: /home/user/.local/share/uv/python/cpython-…
-    WARNING:MainThread:pretty:57:display_top():	return io.open(self, mode, buffering, encodin…
-    WARNING:MainThread:pretty:48:display_top():#6: /home/user/.local/share/uv/python/cpython-…
-    WARNING:MainThread:pretty:57:display_top():	def put(self, item, block=True, timeout=None)…
-    WARNING:MainThread:pretty:48:display_top():#7: /home/user/.local/share/uv/python/cpython-…
+    WARNING:MainThread:pretty:48:display_top():#1: /home/user/.local/share/uv/python/cpython-3.15.0a6+freethreaded-linux-x86_64-gnu/lib/python3.15t/threading.py:998: 314.6 KiB
+    WARNING:MainThread:pretty:57:display_top():	_start_joinable_thread(self._bootstrap, handle=self._os_thread_handle,
+    WARNING:MainThread:pretty:48:display_top():#2: /home/user/.local/share/uv/python/cpython-3.15.0a6+freethreaded-linux-x86_64-gnu/lib/python3.15t/subprocess.py:869: 80.5 KiB
+    WARNING:MainThread:pretty:57:display_top():	def __init__(self, args, bufsize=-1, executable=None,
+    WARNING:MainThread:pretty:48:display_top():#3: /home/user/.local/share/uv/python/cpython-3.15.0a6+freethreaded-linux-x86_64-gnu/lib/python3.15t/subprocess.py:1878: 56.8 KiB
+    WARNING:MainThread:pretty:57:display_top():	def _execute_child(self, args, executable, preexec_fn, close_fds,
+    WARNING:MainThread:pretty:48:display_top():#4: /home/user/.local/share/uv/python/cpython-3.15.0a6+freethreaded-linux-x86_64-gnu/lib/python3.15t/pathlib/__init__.py:969: 56.6 KiB
+    WARNING:MainThread:pretty:57:display_top():	return io.open(self, mode, buffering, encoding, errors, newline)
+    WARNING:MainThread:pretty:48:display_top():#5: /home/user/.local/share/uv/python/cpython-3.15.0a6+freethreaded-linux-x86_64-gnu/lib/python3.15t/threading.py:985: 46.7 KiB
     WARNING:MainThread:pretty:57:display_top():	_limbo[self] = self
-    WARNING:MainThread:pretty:48:display_top():#8: /home/user/.local/share/uv/python/cpython-…
+    WARNING:MainThread:pretty:48:display_top():#6: /home/user/.local/share/uv/python/cpython-3.15.0a6+freethreaded-linux-x86_64-gnu/lib/python3.15t/queue.py:137: 42.2 KiB
+    WARNING:MainThread:pretty:57:display_top():	def put(self, item, block=True, timeout=None):
+    WARNING:MainThread:pretty:48:display_top():#7: /home/user/.local/share/uv/python/cpython-3.15.0a6+freethreaded-linux-x86_64-gnu/lib/python3.15t/threading.py:1058: 35.0 KiB
     WARNING:MainThread:pretty:57:display_top():	def _bootstrap_inner(self):
-    WARNING:MainThread:pretty:48:display_top():#9: /home/user/.local/share/uv/python/cpython-…
+    WARNING:MainThread:pretty:48:display_top():#8: /home/user/.local/share/uv/python/cpython-3.15.0a6+freethreaded-linux-x86_64-gnu/lib/python3.15t/subprocess.py:2158: 33.2 KiB
+    WARNING:MainThread:pretty:57:display_top():	def _wait(self, timeout):
+    WARNING:MainThread:pretty:48:display_top():#9: /home/user/.local/share/uv/python/cpython-3.15.0a6+freethreaded-linux-x86_64-gnu/lib/python3.15t/queue.py:177: 31.1 KiB
     WARNING:MainThread:pretty:57:display_top():	def get(self, block=True, timeout=None):
-    WARNING:MainThread:pretty:48:display_top():#10: /home/user/.local/share/uv/python/cpython…
-    WARNING:MainThread:pretty:57:display_top():	def _get_handles(self, stdin, stdout, stderr)…
-    WARNING:MainThread:pretty:62:display_top():222 other: 856.7 KiB
-    WARNING:MainThread:pretty:67:display_top():total allocated size: 1595.4 KiB
+    WARNING:MainThread:pretty:48:display_top():#10: /home/user/.local/share/uv/python/cpython-3.15.0a6+freethreaded-linux-x86_64-gnu/lib/python3.15t/subprocess.py:1774: 30.5 KiB
+    WARNING:MainThread:pretty:57:display_top():	def _get_handles(self, stdin, stdout, stderr):
+    WARNING:MainThread:pretty:62:display_top():231 other: 932.1 KiB
+    WARNING:MainThread:pretty:67:display_top():total allocated size: 1659.3 KiB
     WARNING:MainThread:deco:62:wrap():stopping tracing
     WARNING:MainThread:deco:64:wrap():stopped tracing

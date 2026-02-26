@@ -20,6 +20,7 @@ def post(stream: Iterator[str]) -> Iterator[str]:
         logger.debug("%s", f"{skip=}")
         if skip:
             skip = False
+            yield "\n"
             continue
         cur_marker = Marker(cur)
         nxt_pragma = Pragma(nxt)
@@ -36,7 +37,7 @@ def post(stream: Iterator[str]) -> Iterator[str]:
                 logger.debug("case (3): second pragma")
                 yield ""
                 skip = True
-            case _, _:  # Fist is marker, second is pragma.
+            case _, _:  # First is marker, second is pragma.
                 logger.debug("case (4): first marker, second pragma")
                 yield nxt_pragma.line  # Keep pragma.
                 skip = True

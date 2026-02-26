@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import random
 import re
 import sys
@@ -39,9 +40,15 @@ def process(args: Arguments) -> None:
     def mapper(i: Path, o: Path) -> None:
         filter_(i, o, args, rgx)
 
+    # import pdb
     ios = list(zip(paths.in_, paths.out_, strict=False))
     # There are one thread for each io pair + three nested std{in,out,err} for each.
-    with ThreadPoolExecutor(max_workers=len(paths.in_)) as extor:
+    max_workers = min(32, (os.process_cpu_count() or 1) + 4)
+    max_workers = min(max_workers, len(paths.in_))
+    # pdb.set_trace()
+
+    logger.info("bound on number of workers:%s", f"{max_workers=}")
+    with ThreadPoolExecutor(max_workers=max_workers) as extor:
         random.shuffle(ios)
         ti = (
             time(colored=args.log.color)  # Keep wrapped.

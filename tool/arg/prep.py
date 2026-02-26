@@ -9,7 +9,7 @@ from argparse import (
 from os import environ as env
 from pathlib import Path
 from shutil import which
-from typing import Literal, cast
+from typing import cast
 
 from tool.arg.type import Log, Paths, Stages, Width
 from tool.lib.gen import LineFilter, dummy
@@ -24,8 +24,10 @@ class Arguments:
         self.raw = args
         self.stages = Stages(*self._stages())
         self.cmd = self._cmd()
-        self.concat = False
-        self.paths = Paths(self._paths(args.input, "in"), self._paths(args.out, "out"))
+        self.paths = Paths(
+            self._paths_in(args.input),
+            self._paths_out(args.out),
+        )
         self.log = Log(
             self._log_level(log_levels),
             self._log_width(),
@@ -41,19 +43,32 @@ class Arguments:
             post if full or "post" in args.stage else dummy,
         )
 
-    def _paths(self, paths: list[Path], io: Literal["in", "out"]) -> list[Path]:
-        args = self.raw
-        if io == "out":
-            if args.test:
-                return [Path("/dev/null")] * len(args.input)
-            if len(paths) == 1 and str(paths[0]) == "-":
-                self.concat = True
-                return [Path("/dev/std" + io)] * len(args.input)
+    def _paths_in(self, paths: list[Path]) -> list[Path]:
+        _ = self
+        cnt = 0
         res = cast("list[Path | None]", [None]) * len(paths)
         for ind, pth in enumerate(paths):
-            str_pth = str(pth)
-            if str_pth == "-":
-                res[ind] = Path("/dev/std" + io)
+            if str(pth) == "-":
+                res[ind] = Path("/dev/stdin")
+                cnt += 1
+            else:
+                res[ind] = pth
+        if cnt > 1:
+            msg = "Stdin ('-') can be processed only once."
+            raise ArgumentError(None, msg)
+        assert is_list_wo_none(res)  # noqa: S101
+        return res
+
+    def _paths_out(self, paths: list[Path] | None) -> list[Path]:
+        args = self.raw
+        if args.test:
+            return [Path("/dev/null")] * len(args.input)
+        if paths is None or (len(paths) == 1 and str(paths) == "-"):
+            return [Path("/dev/stdout")] * len(args.input)
+        res = cast("list[Path | None]", [None]) * len(paths)
+        for ind, pth in enumerate(paths):
+            if str(pth) == "-":
+                res[ind] = Path("/dev/stdout")
             else:
                 res[ind] = pth
         assert is_list_wo_none(res)  # noqa: S101
@@ -62,10 +77,13 @@ class Arguments:
     def _cmd(self) -> list[str]:
         if self.raw.script is not None:
             return [self.raw.script]
-        cmd = [self._clang_path().as_posix(), "-E", "-P", "-C", "-o", "-", "-"]
-        args = self._clang_args()
-        if len(args) != 0:
-            cmd += args
+        cmd = [
+            self._clang_path().as_posix(),
+            "-E",
+            "-P",
+            *self._clang_args(),
+            "-",
+        ]
         buff = self._clang_buff()
         if len(buff) != 0:
             return [*buff, "--", *cmd]
@@ -73,7 +91,9 @@ class Arguments:
 
     def _clang_args(self) -> list[str]:
         args = self.raw
-        clang_args: list[str] = args.clang or []
+        clang_args: list[str] = []
+        if args.clang is not None:
+            clang_args.extend(a.lstrip("\\") for a in args.clang)
         if args.define is not None:
             clang_args.extend("-D" + d for d in args.define)
         if args.keep:
@@ -93,7 +113,7 @@ class Arguments:
 
     @staticmethod
     def _buff_arg(opts: list[str], arg: str, io: str) -> None:
-        match arg[0]:
+        match arg:
             case "def":
                 pass
             case "line":
@@ -108,7 +128,7 @@ class Arguments:
 
     def _clang_path(self) -> Path:
         args = self.raw
-        if args.clang is None:
+        if args.path is None:
             path = which("clang")
             if path is None:
                 msg = (
@@ -119,7 +139,7 @@ class Arguments:
                 raise RuntimeError(msg)
             clang = Path(path)
         else:
-            clang = args.clang[0].absolute()
+            clang = args.path.absolute()
         return clang
 
     def _log_level(self, levels: dict[str, int]) -> int:
@@ -157,6 +177,6 @@ class Arguments:
 
     def _log_color(self) -> bool:
         args = self.raw
-        if args.color is None or args.color[0] == "auto":
+        if args.color is None or args.color == "auto":
             return sys.stderr.isatty()
-        return args.color[0] == "always"
+        return args.color == "always"

@@ -17,6 +17,7 @@ def mid(stream: Iterator[str], args: Arguments) -> Iterator[str]:
         shell=len(args.cmd) == 1,
         size=args.raw.queue,
         poll=args.raw.poll,
+        timeout=args.raw.timeout,
     ) as (
         q_in,
         q_out,

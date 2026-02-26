@@ -50,7 +50,7 @@ class Line:
             ind = stripped.index(self.delim)
             logger.debug("%s", f"{ind=}")
             mb_id = stripped[:ind]
-            stripped = stripped[ind + 1:]
+            stripped = stripped[ind:]
         except ValueError:
             logger.debug("no delim (%s) found", f"{self.delim=}")
             mb_id = stripped

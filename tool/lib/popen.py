@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import sys
 from contextlib import ContextDecorator
 from queue import Queue
 from subprocess import PIPE, Popen  # noqa: S404
 from threading import Thread
-from typing import TYPE_CHECKING, Any, NewType
+from typing import TYPE_CHECKING, NewType
 
 from tool.lib.util import plural
 from tool.log.logger import logger
@@ -26,6 +27,7 @@ class PopenContext(ContextDecorator):
         shell: bool = False,
         size: int = 0,
         poll: float = 1.0,
+        timeout: float = 1.0,
     ) -> None:
         logger.debug("%s", f"{cmd=}")
         proc = Popen(  # noqa: S603
@@ -47,6 +49,7 @@ class PopenContext(ContextDecorator):
         self.proc = proc
         self.size = size
         self.poll = poll
+        self.timeout = timeout
 
     def __enter__(self) -> tuple[IOQueue, IOQueue, IOQueue]:
         self.q_in: IOQueue = Queue(self.size)
@@ -81,7 +84,7 @@ class PopenContext(ContextDecorator):
                     logger.warning(
                         (
                             "thread '%s' has not yet finished:"
-                            "checked %d times%s:"
+                            "checked %d time%s:"
                             "approximate number or remaining lines:%d"
                         ),
                         th.name,
@@ -96,6 +99,10 @@ class PopenContext(ContextDecorator):
                 "thread '%s' has successfully terminated",
                 th.name,
             )
+        code = self.proc.wait(self.timeout)
+        if code != 0:
+            msg = f"Subprocess '{self.proc.pid}' exited with non-zero code: {code}"
+            sys.exit(msg)
 
     def _writer(self) -> None:
         assert self.proc.stdin is not None  # noqa: S101
@@ -121,7 +128,7 @@ class PopenContext(ContextDecorator):
     def _reporter(self) -> None:
         assert self.proc.stderr is not None  # noqa: S101
         for line in self.proc.stderr:
-            logger.debug("(stderr):%s", line.rstrip())
+            logger.warning("(stderr):%s", line.rstrip())
             self.q_err.put(line)
         self.proc.stderr.close()
         self.q_err.put(PopenContext.EOF)
