@@ -1,5 +1,4 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_python//python:py_binary.bzl", "py_binary")
 
 cc_library(
     name = "std",
@@ -9,9 +8,4 @@ cc_library(
     linkopts = [],
     module_interfaces = ["std/std.cppm"],
     visibility = ["//visibility:public"],
-)
-
-py_binary(
-    name = "pp_tool",
-    srcs = ["preprocess.py"],
 )

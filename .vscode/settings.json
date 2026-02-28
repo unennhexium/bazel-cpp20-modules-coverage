@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        // Run `make link_ext` to make it available.
+        "tool/bazel-external/rules_python+"
+    ]
+}

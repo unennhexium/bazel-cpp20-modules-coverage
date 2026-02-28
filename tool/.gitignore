@@ -1,8 +1,7 @@
+bazel-*
+genhtml
+.venv
 __pycache__
 .mypy_cache
 .ruff_cache
-.venv
-bazel-*
-genhtml
 out
-std

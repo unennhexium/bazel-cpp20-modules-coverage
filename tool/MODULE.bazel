@@ -1,9 +1,82 @@
 module(
-    name = "preprocessing_tool",
+    name = "tool",
     version = "0.0.1",
 )
 
-bazel_dep(name = "rules_python", version = "1.8.4", dev_dependency = True)
-bazel_dep(name = "platforms", version = "1.0.0", dev_dependency = True)
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_python", version = "1.9.0-rc1")
 
-register_toolchains("//toolchains:all")
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    is_default = True,
+    python_version = "3.14",
+)
+# use_repo(python, "python_3_13")  # Hermetic toolchain.
+
+# register_toolchains("@rules_python//python/runtime_env_toolchains:all")  # Host's Python.
+
+local_runtime_repo = use_repo_rule(
+    "@rules_python//python/local_toolchains:repos.bzl",
+    "local_runtime_repo",
+)
+
+local_runtime_toolchains_repo = use_repo_rule(
+    "@rules_python//python/local_toolchains:repos.bzl",
+    "local_runtime_toolchains_repo",
+)
+
+# # Declare explit toolchains
+
+# Step 1: Define the local runtime (pin by absolute path or name on PATH).
+local_runtime_repo(
+    name = "local_python_3_13t",
+    interpreter_path = "python3.13t",  # or absolute path if interpreter is not available in PATH.
+    on_failure = "warn",
+    # dev_dependency = True,
+)
+
+local_runtime_repo(
+    name = "local_python_3_14t",
+    interpreter_path = "python3.14t",  # or absolute path if interpreter is not available in PATH.
+    on_failure = "warn",
+    # dev_dependency = True,
+)
+
+# Step 2: Create toolchains for the runtime.
+local_runtime_toolchains_repo(
+    name = "local_toolchains",
+    runtimes = [
+        "local_python_3_13t",
+        "local_python_3_14t",
+    ],
+    # dev_dependency = True,
+)
+
+# Step 3: Register the toolchains (takes precedence over defaults).
+register_toolchains("@local_toolchains//:all")
+
+# register_toolchains(
+#     "//toolchain:python_3_13_toolchain",
+#     "//toolchain:python_3_14_toolchain",
+# )
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    hub_name = "pypi_3_13",
+    python_interpreter = "python3.13t",  # or absolute path if interpreter is not available in PATH.
+    # python_interpreter_target = "@local_python_3_13t//:python",
+    python_version = "3.13",
+    requirements_lock = "//:requirements_lock.txt",
+)
+pip.parse(
+    hub_name = "pypi_3_14",
+    python_interpreter = "python3.14t",  # or absolute path if interpreter is not available in PATH.
+    # python_interpreter_target = "@local_python_3_14t//:python",
+    python_version = "3.14",
+    requirements_lock = "//:requirements_lock.txt",
+)
+use_repo(
+    pip,
+    "pypi_3_13",
+    "pypi_3_14",
+)
