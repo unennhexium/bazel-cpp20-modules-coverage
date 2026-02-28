@@ -1,7 +1,13 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
-load("@preprocessing_tool//:preprocess_rule.bzl", "preprocess")
+load("@tool//tool:rule.bzl", "cc_pp")
 
-preprocess(
+filegroup(
+    name = "test_data",
+    srcs = glob(["*.cpp", "*.cppm"]),
+    visibility = ["@tool//:__pkg__"],
+)
+
+cc_pp(
     name = "process_srcs",
     srcs = glob(["*.cpp"]),
 )
@@ -12,22 +18,22 @@ cc_binary(
 )
 
 cc_binary(
-    copts = [],
-    deps = [":lib"],
-    features = ["cpp_modules"],
-    linkopts = [],
     name = "main",
     srcs = ["main.cpp"],
+    copts = [],
+    features = ["cpp_modules"],
+    linkopts = [],
+    deps = [":lib"],
 )
 
 cc_library(
+    name = "lib",
+    srcs = [],
     copts = [],
-    deps = ["//:std"],
     features = ["cpp_modules"],
     linkopts = [],
     module_interfaces = [":lib_pp"],
-    name = "lib",
-    srcs = [],
+    deps = ["//:std"],
 )
 
 config_setting(
@@ -35,34 +41,34 @@ config_setting(
     values = {"define": "cov=1"},
 )
 
-preprocess(
+cc_pp(
     name = "lib_pp",
     srcs = ["lib.cppm"],
+    keep_comments = select({
+        "do_cov": True,
+        "//conditions:default": False,
+    }),
     local_defines = select({
         ":do_cov": ["COVERAGE"],
         "//conditions:default": [],
     }),
     out_ext = select({
-        ":do_cov": "cpp", # (.cppm -> .cpp) Can be used as `srcs` argument.
-        "//conditions:default": "", # (.cppm -> .cppm) Keep existing extension.
+        ":do_cov": "cpp",  # (.cppm -> .cpp) Can be used as `srcs` argument.
+        "//conditions:default": "",  # (.cppm -> .cppm) Keep existing extension.
     }),
-    keep_comments = select({
-        "do_cov": True,
-        "//conditions:default": False
-    })
 )
 
-preprocess(
+cc_pp(
     name = "test_pp",
     srcs = ["test.cpp"],
+    keep_comments = select({
+        "do_cov": False,
+        "//conditions:default": True,
+    }),
     local_defines = select({
         ":do_cov": ["COVERAGE"],
         "//conditions:default": [],
     }),
-    keep_comments = select({
-        "do_cov": False,
-        "//conditions:default": True
-    })
 )
 
 cc_test(

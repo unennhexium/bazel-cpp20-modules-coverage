@@ -1,9 +1,62 @@
 module(
-    name = "preprocessing_tool",
+    name = "tool",
     version = "0.0.1",
 )
 
-bazel_dep(name = "rules_python", version = "1.8.4", dev_dependency = True)
 bazel_dep(name = "platforms", version = "1.0.0", dev_dependency = True)
 
-register_toolchains("//toolchains:all")
+bazel_dep(name = "rules_python", version = "1.9.0-rc1")
+
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    is_default = True,
+    python_version = "3.14",
+)
+# use_repo(python, "python_3_14") # Force downloading hermetic Python toolchain.
+
+# Automatically pick the Python form $PATH, e.g. .venv/bin/python3.14t,
+# if venv is activated, but custom rule (see rule.bzl) is not using it,
+# so define the toolchain explicitly.
+# register_toolchains("@rules_python//python/runtime_env_toolchains:all")
+
+local_runtime_repo = use_repo_rule(
+    "@rules_python//python/local_toolchains:repos.bzl",
+    "local_runtime_repo",
+)
+
+local_runtime_toolchains_repo = use_repo_rule(
+    "@rules_python//python/local_toolchains:repos.bzl",
+    "local_runtime_toolchains_repo",
+)
+
+# # Step 1: Define the local runtime (pin by absolute path or name on PATH).
+local_runtime_repo(
+    name = "local_python_3_14t",
+    interpreter_path = "python3.14t",  # or absolute path if interpreter is not available in PATH.
+    on_failure = "fail",
+)
+
+# # Step 2: Create toolchains for the runtime.
+local_runtime_toolchains_repo(
+    name = "local_toolchains",
+    runtimes = ["local_python_3_14t"],
+)
+
+# # Step 3: Register the toolchains (takes precedence over defaults by should match).
+register_toolchains("@local_toolchains//:all", dev_dependency = True)
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    hub_name = "tool_deps",
+    python_interpreter = "python",
+    # python_interpreter = "python3.14t",  # or absolute path if interpreter is not available in PATH.
+    python_version = "3.14",
+    # python_interpreter_target = "@local_python_3_14t//:python",
+    requirements_lock = "//:requirements_lock.txt",
+)
+use_repo(pip, "tool_deps")
+
+register_toolchains(
+    "//toolchain:python_3_13_toolchain",
+    "//toolchain:python_3_14_toolchain",
+)

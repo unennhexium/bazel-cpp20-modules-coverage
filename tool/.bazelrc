@@ -1,0 +1,4 @@
+# build --@rules_python//python/config_settings:py_freethreaded
+# build --@rules_python//python/config_settings:python_version=3.14
+
+test --test_output=streamed

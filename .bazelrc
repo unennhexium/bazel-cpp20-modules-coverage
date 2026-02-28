@@ -40,4 +40,5 @@ coverage:inpsect --test_output=all
 coverage:inpsect --test_summary=detailed
 coverage:inspect --subcommands
 
-common --sandbox_debug --verbose_failures --subcommands
+build --sandbox_debug --verbose_failures --subcommands
+build --show_result 2 # Print output file names.

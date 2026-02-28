@@ -1,6 +1,81 @@
-load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+
+alias(
+    name = "tool",
+    actual = select({
+        "@rules_python//python/config_settings:is_python_3.13": ":tool_3_13",
+        "@rules_python//python/config_settings:is_python_3.14": ":tool_3_14",
+        # "//conditions:default": ":tool_3_14",
+    }),
+    visibility = ["//toolchain:__pkg__", "//test:__pkg__"],
+)
+
+deps = [
+    ":arg",
+    ":lib",
+    ":line",
+    ":log",
+    ":main",
+    ":proc",
+    ":stage",
+    "@tool_deps//more_itertools",
+    "@tool_deps//py_machineid",
+]
 
 py_binary(
-    name = "preprocess_tool",
-    srcs = glob(["**/*.py"]),
+    name = "tool_3_13",
+    srcs = ["main.py"],
+    main = "main.py",
+    deps = deps,
+    python_version = "3.13"
+)
+
+py_binary(
+    name = "tool_3_14",
+    srcs = ["main.py"],
+    main = "main.py",
+    deps = deps,
+    python_version = "3.14"
+)
+
+py_library(
+    name = "main",
+    srcs = ["src/__main__.py"],
+    imports = ["."],
+)
+
+py_library(
+    name = "arg",
+    srcs = glob(["src/arg/*.py"]),
+    imports = ["."],
+)
+
+py_library(
+    name = "lib",
+    srcs = glob(["src/lib/*.py"]),
+    imports = ["."],
+)
+
+py_library(
+    name = "line",
+    srcs = glob(["src/line/*.py"]),
+    imports = ["."],
+)
+
+py_library(
+    name = "log",
+    srcs = glob(["src/log/*.py"]),
+    imports = ["."],
+)
+
+py_library(
+    name = "proc",
+    srcs = glob(["src/proc/*.py"]),
+    imports = ["."],
+)
+
+py_library(
+    name = "stage",
+    srcs = glob(["src/stage/*.py"]),
+    imports = ["."],
 )

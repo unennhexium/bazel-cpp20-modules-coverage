@@ -44,8 +44,8 @@ query:
 
 # FIXME: `--branch-coverage` - gives an error on "//modules:test" target coverage data.
 
-python := .venv/bin/python
-prog := $(python) -O -- main.py
+python := tool/.venv/bin/python
+prog := $(python) -O -- tool/main.py
 
 # Run each stage of the preprocessing script piped one into another.
 full:
@@ -76,15 +76,10 @@ run_pipe:
 
 # Run all stages withing preprocessing script on three files concurently.
 run_within:
-	@LOG_LEVEL=DEBUG \
-		$(prog) \
-			-C always \
-			-s pre mid post \
-			-DCOVERAGE \
-			modules/main.cpp \
-			modules/test.cpp \
-			modules/lib.cppm # \
-# 	2>&1 | grep -E --color=always 'DEBUG'
+	@ mkdir -vp out && rm -v out/*
+	@LOG_LEVEL=DEBUG $(prog) -C always -s pre mid post -DCOVERAGE \
+			modules/main.cpp modules/test.cpp modules/lib.cppm \
+			-o out/main.pp.cpp -o out/test.pp.cpp -o out/lib.pp.cpp
 
 # Provide '-0' to inculde all files in the list
 number_of_files := 20
@@ -109,6 +104,19 @@ list_llvm:
 
 # Run in test mode over the list of files.
 run_llvm:
-	@time LOG_LEVEL= $(prog) -tTc \\-Wno-everything @test_files.txt
+	@time LOG_LEVEL= $(prog) -Ttc \\-Wno-everything @test_files.txt
 
 # Run `ulimit -S -n 36636` in case of "OSError: [Errno 24] Too many open files".
+
+# Compile requirements for tool.
+reqs:
+	uv pip compile pyproject.toml -o requirements_lock.txt --group dev
+
+# Link external's directory into the tool project folder.
+ext:
+	cd tool && ln -sf $$(bazel info execution_root)/external bazel-external
+
+# Replicate "modules" directory/file structure into "tool" directory.
+repl:
+	rm -rf tool/test/data
+	./replicate.nu -f [BUILD.bazel] -s modules tool/test/data

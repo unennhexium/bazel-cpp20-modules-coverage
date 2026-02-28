@@ -1,0 +1,46 @@
+load("@rules_python//python:py_runtime.bzl", "py_runtime")
+load("@rules_python//python:py_runtime_pair.bzl", "py_runtime_pair")
+
+py_runtime(
+    name = "python_3_13_runtime",
+    interpreter = "python",
+    interpreter_version_info = {
+        "major": "3",
+        "minor": "13",
+    },
+)
+
+py_runtime(
+    name = "python_3_14_runtime",
+    interpreter = "python",
+    interpreter_version_info = {
+        "major": "3",
+        "minor": "14",
+    },
+)
+
+py_runtime_pair(
+    name = "python_3_13_runtime_pair",
+    py3_runtime = ":python_3_13_runtime",
+)
+
+py_runtime_pair(
+    name = "python_3_14_runtime_pair",
+    py3_runtime = ":python_3_14_runtime",
+)
+
+toolchain(
+    name = "python_3_13_toolchain",
+    target_compatible_with = ["@platforms//os:linux"],
+    target_settings = ["@rules_python//python/config_settings:is_python_3.13"],
+    toolchain = ":python_3_13_runtime",
+    toolchain_type = "@rules_python//python:toolchain_type",
+)
+
+toolchain(
+    name = "python_3_14_toolchain",
+    target_compatible_with = ["@platforms//os:linux"],
+    target_settings = ["@rules_python//python/config_settings:is_python_3.14"],
+    toolchain = ":python_3_14_runtime",
+    toolchain_type = "@rules_python//python:toolchain_type",
+)

@@ -1,0 +1,6 @@
+load("@//:rule.bzl", "cc_pp")
+
+cc_pp(
+    name = "pp",
+    srcs = ["//:test/data/test.cpp"]
+)

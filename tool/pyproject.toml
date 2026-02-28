@@ -1,0 +1,21 @@
+[project]
+dependencies    = ["more-itertools>=10.8.0", "py-machineid>=1.0.0"]
+description     = "Preprocess files with Clang ignoring but leaving remaining `#include`-s."
+name            = "single-file-pp"
+readme          = "README.md"
+requires-python = ">=3.13"
+version         = "0.1.0"
+
+[dependency-groups]
+dev = [
+    "argcomplete>=3.6.3",
+    "pytest>=9.0.2",
+]
+
+[tool.pytest]
+addopts = ["--import-mode=importlib"]
+norecursedirs = ["llvm-project", "bazel-*"]
+# python_classes   = ["T_*"]
+python_files     = ["test/*.py"]
+# python_functions = ["t_*"]
+strict = true
