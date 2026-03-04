@@ -1,0 +1,94 @@
+set quiet := true
+
+# Compile requirements for tool.
+[group("bootstrap")]
+compile_reqs:
+    uv pip compile pyproject.toml -o requirements_lock.txt --group dev
+
+# Replicate "modules" directory/file structure into "tool" directory.
+[group("bootstrap")]
+replicate:
+    rm -rf test/data
+    ../replicate.nu -f [BUILD.bazel] -s modules test/data
+
+# Print all runfiles paths filtering on '/mypy/' or 'main' strings.
+dbg_runfiles:
+    bazel run //:debug_runfiles | grep -E '/mypy/|main' --color=always
+
+# Run the project tests.
+[group("quality")]
+test:
+    uv run -- pytest
+
+# Type check the project.
+[group("quality")]
+check:
+    uv run -- mypy src/tool/__main__.py
+
+python := "uv run -- "
+prog := python + "tool"
+
+# Display diff/diff3 between the results of the each stage.
+[arg("cnt", long="cnt", short="c", help=" \t- whether to compare intermediate result (3) or not (2)")]
+[group("test")]
+diff cnt="2":
+    #!/usr/bin/env -S bash -eEuo pipefail
+    pre=$({{ prog }} -s pre -- $(realpath ../modules/test.cpp))
+    mid=$(/usr/bin/clang -E -C -P - -DCOVERAGE <<<$pre)
+    post=$({{ prog }} -s post -- - <<<$mid)
+    diff{{ if cnt == "2" { " -y" } else { "3" } }} \
+        <(echo "$pre") \
+        {{ if cnt == "2" { "" } else { "<(echo \"$mid\")" } }} \
+        <(echo "$post")
+
+    # echo -e [PRE]"\n\n$pre\n" && \
+    # echo -e [MID]"\n\n$mid\n" && \
+    # echo -e [POST]"\n\n$post\n"
+
+# Run "pre" -> clang -> "post" pipe.
+[group("test")]
+pipe:
+    @TOOL_LOG_LEVEL= \
+        {{ prog }} -s pre  -- ../modules/test.cpp | clang -E -C -P - | \
+        {{ prog }} -s post -- -
+
+# Run all preprocessing stages.
+[group("test")]
+all:
+    @mkdir -vp out && rm -vf out/*
+    @TOOL_LOG_LEVEL= {{ prog }} -C always -s pre mid post -DCOVERAGE \
+            ../modules/main.cpp ../modules/test.cpp ../modules/lib.cppm \
+            -o ../out/main.pp.cpp -o ../out/test.pp.cpp -o ../out/lib.pp.cpp
+
+# Run each preprocessing stage piped on into another.
+[group("test")]
+all_pipe:
+    @print() { read -rd '' txt; echo -e "[$1]\n\n$txt\n" >&2; }; \
+    cat ../modules/test.cpp | {{ prog }} -s pre  -- - | \
+    tee >(print PRE)        | {{ prog }} -s mid  -- - | \
+    tee >(print MID)        | {{ prog }} -s post -- - | \
+    print POST
+
+# Run in test mode over the list of files.
+[arg("inputs", help=" \t- input files to process with script")]
+[group("test")]
+over_llvm *inputs:
+    time {{ prog }} -TMtc \\-Wno-everything {{ inputs }}
+
+# Capture --help output.
+[group("doc")]
+cap:
+    asciinema rec --command="{{ prog }} --help" \
+        --cols=80 --rows=155 --overwrite rec.cast
+    sed -i -E \
+        -e "s=$PWD/.devenv/state/venv/bin/([^ ]+) =\\1 =g" \
+        -e 's=\[[[:digit:]]+\.[[:digit:]]+,(.+)=[0.000000,\1=' \
+        rec.cast
+
+# Convert *.cap into svg
+[group("doc")]
+conv: cap
+    termsvg export --output=rec.svg --nowindow \
+        --text-color       '#000000' \
+        --background-color '#FFFFFF' \
+        rec.cast

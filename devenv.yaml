@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=https://devenv.sh/devenv.schema.json
+inputs:
+  nixpkgs:
+    url: github:cachix/devenv-nixpkgs/rolling
+
+# This is an error to enable uv in directories without pyproject.toml.
+# imports:
+# - ./tool

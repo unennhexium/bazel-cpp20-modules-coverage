@@ -2,9 +2,23 @@
 dependencies    = ["more-itertools>=10.8.0", "py-machineid>=1.0.0"]
 description     = "Preprocess files with Clang ignoring but leaving remaining `#include`-s."
 name            = "tool"
-readme          = "README.md"
+readme          = "README.txt"
 requires-python = ">=3.13"
 version         = "0.1.0"
+classifiers = ["Private :: Do Not Upload"]
+
+[project.scripts]
+tool = "tool:main"
+
+[build-system]
+requires = ["uv_build>=0.10.4,<0.11.0"]
+build-backend = "uv_build"
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true
 
 [dependency-groups]
 dev = [
@@ -15,8 +29,8 @@ dev = [
 
 [tool.pytest]
 addopts = ["--import-mode=importlib"]
-norecursedirs = ["llvm-project", "bazel-*"]
+norecursedirs = ["bazel-*", ".direnv", ".devenv"]
 # python_classes   = ["T_*"]
-python_files     = ["test/*.py"]
+python_files     = ["test/test_*.py"]
 # python_functions = ["t_*"]
 strict = true

@@ -5,14 +5,14 @@
 # The script first recreates `src` directory structure inside `dst`,
 # then symlinks each `src` file into those directories.
 #
-# Note: use one of the following commandd to gather `--dry-run`+`--json` output
+# Note: use one of the following commands to gather `--dry-run --json` output
 #
 # % dst=dir # destination directory
 # % what=mkdir # or 'ln' to pick link creation report only
 # % ./replicate.nu -dj $dst 2>&1 |
 # >   jq -s --arg what $what \
 # >     'reduce (.[] | to_entries[0]) as $it
-# >       ({}; .[$it.key] += [$it.value]) | .[$what]'
+# >       ({}; .[$it.key] += [$it.value])[$what]'
 #
 # ❯ ./replicate.nu -dj $dst 2>&1
 # ¦ | lines
@@ -26,38 +26,23 @@ def main [
   --filter (-f): list<string> # file names to exclude, e.g. '[file_a file_b]'
   --exclude (-e): list<string> # directory names to exclude, e.g. idem.
   --absolute (-a) # whether to create absolute link targets
-  --dry-run (-d) # do not perform any action, just print what will be created
+  --dry (-d) # do not perform any action, just print what will be created
   --json (-j) # report `--dry-run` as ndjson; see note above
 ]: [] {
-  if not ($dst | path exists) and not $dry_run { mkdir $dst }
-  dirs $src $dst ($exclude | default []) $dry_run
-  | par-each {
-    if $dry_run {
-      if $json {
-        {mkdir: ($in | update in {path join})} | to json -r | print -e $in
-      } else {
-        print -e $"creating directory: \t'($in.out)'"
-      }
-    }
-    $in.in
-  }
-  | files $src $dst ($filter | default []) $absolute $dry_run
-  | par-each {
-    if $dry_run {
-      if $json {
-        {ln: $in} | to json -r | print -e $in
-      } else {
-        print -e $"creating symlink:\n- from:\t'($in.tgt)'\n- to:\t'($in.lnk)'"
-      }
-    }
-  }
+  if not ($dst | path exists) and not $dry { mkdir $dst }
+  let flt = $filter | default []
+  [[]] | files $src $dst $flt $absolute $dry | print_files $dry $json
+  dirs $src $dst ($exclude | default []) $dry
+  | print_dirs $dry $json
+  | files $src $dst $flt $absolute $dry
+  | print_files $dry $json
   null
 }
 
 def dirs [src: string dst: string to_exclude: list<string>, dry: bool]: [
   any
   ->
-  list<record<in: string out: string>>
+  list<record<in: list<string> out: string>>
 ] {
   ^find $src -type d -printf %P\0
   | lines0
@@ -76,17 +61,28 @@ def dirs [src: string dst: string to_exclude: list<string>, dry: bool]: [
   } ($in | first) ($in | skip)
   | where $it != []
   | where { all {|$it| $to_exclude | all { $in != $it } } }
-  | par-each {
-    let dir = [$dst ...$in] | path join
-    if not $dry {
-      mkdir -v $dir
+  |
+}
+
+def print_dirs [dry: bool json: bool]: [
+  list<record<in: list<string> out: string>>
+  ->
+  list<list<string>>
+] {
+  $in | par-each {
+    if $dry {
+      if $json {
+        {mkdir: ($in | update in {path join})} | to json -r | print -e $in
+      } else {
+        print -e $"creating directory: \t'($in.out)'"
+      }
     }
-    {in: $in out: $dir}
- }
+    $in.in
+  }
 }
 
 def files [src: string dst: string filter: list<string>, abs: bool dry: bool]: [
-  list<string>
+  list<list<string>>
   ->
   list<record<string lnk: string tgt: string>>
 ] {
@@ -106,8 +102,24 @@ def files [src: string dst: string filter: list<string>, abs: bool dry: bool]: [
   }
 }
 
+def print_files [dry: bool json: bool]: [
+  list<record<string lnk: string tgt: string>>
+  ->
+  any
+] {
+  $in | par-each {
+    if $dry {
+      if $json {
+        {ln: $in} | to json -r | print -e $in
+      } else {
+        print -e $"creating symlink:\n- from:\t'($in.tgt)'\n- to:\t'($in.lnk)'"
+      }
+    }
+  }
+}
+
 def lines0 []: [string -> list<string>] {
-  split row (0x[00] | decode)
+  split row (char -i 0)
 }
 
 def "path relative" [to: string]: [string -> string] {

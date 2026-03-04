@@ -1,8 +1,17 @@
 __pycache__
+.devenv*
+.direnv
 .mypy_cache
+.pre-commit-config.yaml
+.pytest_cache
 .ruff_cache
 .venv
 bazel-*
+devenv.local.nix
+devenv.local.yaml
+dist
 genhtml
+llvm_project
 out
+rec.cast
 std

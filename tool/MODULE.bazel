@@ -53,12 +53,12 @@ local_runtime_toolchains_repo(
 )
 
 # Step 3: Register the toolchains (takes precedence over defaults).
-register_toolchains("@local_toolchains//:all")
+# register_toolchains("@local_toolchains//:all")
 
-# register_toolchains(
-#     "//toolchain:python_3_13_toolchain",
-#     "//toolchain:python_3_14_toolchain",
-# )
+register_toolchains(
+    "//toolchain:python_3_13_toolchain",
+    "//toolchain:python_3_14_toolchain",
+)
 
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 pip.parse(

@@ -1,0 +1,7 @@
+{
+    "recommendations": [
+        "jnoortheen.nix-ide",
+        "bazelbuild.vscode-bazel",
+        "charliermarsh.ruff"
+    ]
+}

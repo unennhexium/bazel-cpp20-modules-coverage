@@ -24,8 +24,10 @@ if IS_BAZEL_TEST:
     from python.runfiles import Runfiles
 
     RFS = Runfiles.Create()
-elif not CWD.match("*/minimal/tool"):
-    msg = "Current directory does not end with '/minimal/tool'."
+elif (DEVENV_STATE := os.environ.get("DEVENV_STATE", None)) is not None:
+    pass
+else:
+    msg = "Run `bazel test` or `devenv tasks run pytest`."
     raise RuntimeError(msg)
 
 
@@ -45,7 +47,7 @@ def tool() -> Tool:
         env = RFS.EnvVars()
         mode = 0o555
     else:
-        tool = Path(CWD.joinpath("main.py"))
+        tool = Path(DEVENV_STATE, "venv", "bin", "tool")
         # Inherit env from the parent process.
         # Actvate venv before running tests to
         # make dependences available.
@@ -55,7 +57,7 @@ def tool() -> Tool:
     assert tool.is_file()
     tool_mode = stat.S_IMODE(tool.stat().st_mode)
     assert tool_mode == mode, f"{tool_mode:0o}"
-    env["LOG_LEVEL"] = "ERROR"
+    env["TOOL_LOG_LEVEL"] = "ERROR"
     return Tool(tool, env)
 
 

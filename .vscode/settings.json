@@ -1,6 +1,44 @@
 {
-    "python.analysis.extraPaths": [
-        // Run `make link_ext` to make it available.
-        "tool/bazel-external/rules_python+"
-    ]
+  "nix.enableLanguageServer": true,
+  "nix.serverSettings": {
+    "nil": {
+      "formatting": {
+        "command": [
+          "nixfmt"
+        ]
+      }
+    },
+    "nixd": {
+      "formatting": {
+        "command": [
+          "nixfmt"
+        ]
+      }
+    }
+  },
+  "python.analysis.extraPaths": [
+    "tool/bazel-external/rules_python+"
+  ],
+  "ruff.configuration": {
+    "unsafe-fixes": true
+  },
+  "ruff.format.preview": true,
+  "ruff.lint.ignore": [
+    "ANN",
+    "D",
+    "DOC",
+    "TD",
+    "CPY",
+    "INP001",
+    "ERA001",
+    "I"
+  ],
+  "ruff.lint.preview": true,
+  "ruff.lint.select": [
+    "ALL"
+  ],
+  "ruff.nativeServer": "on",
+  "ruff.path": [
+    "tool/devenv/profile/bin/ruff"
+  ]
 }

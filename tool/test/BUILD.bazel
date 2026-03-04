@@ -3,6 +3,45 @@ load("@//:rule.bzl", "cc_pp")
 load("@rules_python//python:defs.bzl", "py_test", "py_binary")
 load("@rules_python//python/entry_points:py_console_script_binary.bzl", "py_console_script_binary")
 
+py_test(
+    name = "test_tool",
+    srcs = ["test_tool.py"],
+    args = [
+        "--verbosity=4",
+        "-rA",  # Show extra test summary info for all tests.
+        "--capture=no",  # Disable output capturing (shows print statements in real-time).
+        "--color=yes",
+    ],
+    data = [":test_data"],
+    env = {
+        "BAZEL_PY_TEST": "1",
+        "TEST_ENVIRONMENT": "bazel",
+    },
+    main = "test_tool.py",
+    # tags = ["no-sandbox"],
+    deps = [
+        "//:tool",
+        "@rules_python//python/runfiles",
+        "@pypi_3_14//pytest",
+    ],
+)
+
+cc_pp(
+    name = "pp",
+    srcs = [":test_data"],
+)
+
+filegroup(
+    name = "test_data",
+    srcs = glob([
+        "data/*.cpp",
+        "data/*.cppm",
+    ]),
+)
+
+# There are error when trying to run mypy using Bazel.
+# Run it from within devenv with `mypy src/tool/__main__.py`.
+
 py_binary(
     name = "runfiles",
     srcs = ["runfiles.py"],
@@ -37,40 +76,4 @@ mypy_check(
     name = "typecheck",
     srcs = [],
     deps = ["//:tool"],
-)
-
-py_test(
-    name = "test_tool",
-    srcs = ["test_tool.py"],
-    args = [
-        "--verbosity=4",
-        "-rA",  # Show extra test summary info for all tests.
-        "--capture=no",  # Disable output capturing (shows print statements in real-time).
-        "--color=yes",
-    ],
-    data = [":test_data"],
-    env = {
-        "BAZEL_PY_TEST": "1",
-        "TEST_ENVIRONMENT": "bazel",
-    },
-    main = "test/test_tool.py",
-    # tags = ["no-sandbox"],
-    deps = [
-        "//:tool",
-        "@rules_python//python/runfiles",
-        "@pypi_3_14//pytest",
-    ],
-)
-
-cc_pp(
-    name = "pp",
-    srcs = [":test_data"],
-)
-
-filegroup(
-    name = "test_data",
-    srcs = glob([
-        "data/*.cpp",
-        "data/*.cppm",
-    ]),
 )

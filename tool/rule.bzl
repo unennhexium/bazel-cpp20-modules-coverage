@@ -37,8 +37,9 @@ def _preprocess_impl(ctx):
         tools = [ctx.attr._tool[DefaultInfo].files_to_run],
         outputs = outs,
         env = {
-            "LOG_LEVEL": "INFO",
-            "COLOR": "never",
+            "TOOL_LOG_LEVEL": "INFO",
+            "TOOL_COLOR": "never",
+            "TOOL_TRUNCATE": "never",
         },
         mnemonic = "PPTool",
         progress_message = "Processing `srcs` files with tool.",

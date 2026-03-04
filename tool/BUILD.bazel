@@ -1,4 +1,4 @@
-load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+load("@rules_python//python:defs.bzl", "py_binary")
 
 alias(
     name = "tool",
@@ -10,83 +10,36 @@ alias(
     visibility = ["//toolchain:__pkg__", "//test:__pkg__"],
 )
 
-deps = [
-    ":arg",
-    ":lib",
-    ":line",
-    ":log",
-    ":main",
-    ":proc",
-    ":stage",
-]
+entry_point = "src/tool/__main__.py"
 
 py_binary(
     name = "tool_auto",
-    srcs = ["main.py"],
-    main = "main.py",
-    deps = deps,
+    srcs = glob(["src/tool/**/*.py"]),
+    main = entry_point,
+    deps = [],
+    imports = ["src"]
 )
 
 py_binary(
     name = "tool_3_13",
-    srcs = ["main.py"],
-    main = "main.py",
+    srcs = glob(["src/tool/**/*.py"]),
+    main = entry_point,
     python_version = "3.13",
-    deps = deps + [
+    deps = [
         "@pypi_3_13//more_itertools",
         "@pypi_3_13//py_machineid",
     ],
+    imports = ["src"]
 )
 
 py_binary(
     name = "tool_3_14",
-    srcs = ["main.py"],
-    main = "main.py",
+    srcs = glob(["src/tool/**/*.py"]),
+    main = entry_point,
     python_version = "3.14",
-    deps = deps + [
+    deps = [
         "@pypi_3_14//more_itertools",
         "@pypi_3_14//py_machineid",
     ],
-)
-
-py_library(
-    name = "main",
-    srcs = ["src/__main__.py"],
-    imports = ["."],
-)
-
-py_library(
-    name = "arg",
-    srcs = glob(["src/arg/*.py"]),
-    imports = ["."],
-)
-
-py_library(
-    name = "lib",
-    srcs = glob(["src/lib/*.py"]),
-    imports = ["."],
-)
-
-py_library(
-    name = "line",
-    srcs = glob(["src/line/*.py"]),
-    imports = ["."],
-)
-
-py_library(
-    name = "log",
-    srcs = glob(["src/log/*.py"]),
-    imports = ["."],
-)
-
-py_library(
-    name = "proc",
-    srcs = glob(["src/proc/*.py"]),
-    imports = ["."],
-)
-
-py_library(
-    name = "stage",
-    srcs = glob(["src/stage/*.py"]),
-    imports = ["."],
+    imports = ["src"]
 )
