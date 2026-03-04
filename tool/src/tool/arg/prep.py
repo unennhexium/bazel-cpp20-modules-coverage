@@ -46,17 +46,12 @@ class Arguments:
 
     def _paths_in(self, paths: list[Path]) -> list[Path]:
         _ = self
-        cnt = 0
         res = cast("list[Path | None]", [None]) * len(paths)
         for ind, pth in enumerate(paths):
             if str(pth) == "-":
                 res[ind] = Path("/dev/stdin")
-                cnt += 1
             else:
                 res[ind] = pth
-        if cnt > 1:
-            msg = "Stdin ('-') can be processed only once."
-            raise ArgumentError(None, msg)
         assert is_list_wo_none(res)  # noqa: S101
         return res
 

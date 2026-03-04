@@ -48,9 +48,6 @@ def tool() -> Tool:
         mode = 0o555
     else:
         tool = Path(DEVENV_STATE, "venv", "bin", "tool")
-        # Inherit env from the parent process.
-        # Actvate venv before running tests to
-        # make dependences available.
         env = os.environ.copy()
         mode = 0o775
     assert tool.exists()
@@ -348,6 +345,40 @@ def test_full_no_keep_define(tool: Tool, file: Path):
         pytest.fail("Timeout expired.")
     assert len(err) == 0
     lines = """\
+TEST(LibTest, HelloWorld) {
+  EXPECT_EQ(greet(), "Hello, World!");
+}
+"""
+    err_str = ["[EXP]", lines, "[POST]", full]
+    for e, r in zip(lines.split("\n"), full.split("\n"), strict=False):
+        assert e == r, "\n" + "\n\n".join((f"{e=}\n{r=}", *err_str))
+
+
+def test_stdin_cache(tool: Tool, file: Path):
+    proc = Popen(  # noqa: S602
+        f"cat {file} | {tool.prog} - - -o - -o -",
+        shell=True,
+        stdin=DEVNULL,
+        stdout=PIPE,
+        stderr=PIPE,
+        text=True,
+        env=tool.env,
+    )
+    try:
+        # with file.open("r", encoding="utf-8") as file_in:
+        #     print(lines := file_in.readlines())
+        full, err = proc.communicate(timeout=1.0)
+    except TimeoutExpired:
+        pytest.fail("Timeout expired.")
+    assert len(err) == 0
+    lines = """\
+#include <gtest/gtest.h>
+import lib;
+TEST(LibTest, HelloWorld) {
+  EXPECT_EQ(greet(), "Hello, World!");
+}
+#include <gtest/gtest.h>
+import lib;
 TEST(LibTest, HelloWorld) {
   EXPECT_EQ(greet(), "Hello, World!");
 }

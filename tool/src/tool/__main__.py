@@ -43,7 +43,7 @@ def process(args: Arguments) -> None:
     rgx = re.compile(r"#[ \t]*include[ \t]+.*")
 
     def mapper(i: Path, o: Path) -> None:
-        filter_(i, o, args, rgx)
+        filter_(i, o, args, rgx, cache_stdin=True)
 
     is_py_3_13_or_above = sys.version_info >= (3, 13, 0)
     logger.info("GIL:%s", is_py_3_13_or_above and sys._is_gil_enabled())  # noqa: SLF001
