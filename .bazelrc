@@ -15,13 +15,13 @@ common:debug --experimental_output_paths=strip
 
 test --test_output=errors
 test --test_summary=terse
-build --output_filter='^(?!@googletest//.*)$' # Supress warning from compilation of GoogleTest sources.
+build --output_filter='^(?!@googletest//.*)$' # Suppress warning from compilation of GoogleTest sources.
 
 # NOTE: These are 'common' flags to be used with cquery.
 
 # No effect.
 common:coverage --features=coverage_enabled
-common:coverage --combined_report=lcov # `lcov` is the only and the defeault value supported at this time.
+common:coverage --combined_report=lcov # `lcov` is the only and the default value supported at this time.
 # common:coverage --test_env=LLVM_PROFILE_FILE=%t.profraw
 
 # Important: 0-sized coverage files, no-data without this flag.
@@ -36,8 +36,8 @@ common:coverage --linkopt=-fprofile-instr-generate
 # common:coverage --cxxopt=-fprofile-arcs --cxxopt=-ftest-coverage # C++20 modules.
 # common:coverage--instrumentation_filter='^//main[/:].*$'
 
-coverage:inpsect --test_output=all
-coverage:inpsect --test_summary=detailed
+coverage:inspect --test_output=all
+coverage:inspect --test_summary=detailed
 coverage:inspect --subcommands
 
 # build --sandbox_debug --verbose_failures --subcommands

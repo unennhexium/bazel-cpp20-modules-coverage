@@ -14,7 +14,7 @@ TIME MEASUREMENTS
 TRACING WITH llvm-project/9deb4fda30be47e4aea5671055a0f655a048afdc
     The memory consumption is dominated by `threading` library. Queue's `put` is #6.
     No matter whether its size is bound or unbound: Queue of size one consume the same
-    amount of memory as Queue of unbound size, though this was measured on relatvelly
+    amount of memory as Queue of unbound size, though this was measured on relatively
     small number of files.
 
     % make gen_llvm

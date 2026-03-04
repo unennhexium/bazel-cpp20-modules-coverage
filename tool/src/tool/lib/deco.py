@@ -39,14 +39,14 @@ def trace(
         def wrap():
             tracemalloc.start()
             logger.warning("started tracing")
-            # If there any unhandled exeption, `tracemaloc`
+            # If there any unhandled exception, `tracemaloc`
             # will block interpreter from exit, so wrap the
             # rest into `try`/`finally`.
             try:
                 fun()
                 snapshot = tracemalloc.take_snapshot()
             except Exception as e:  # noqa: BLE001
-                logger.exception("exception accured: %s", e)
+                logger.exception("exception occurred: %s", e)
             else:
                 fs = []
                 if filters is not None:

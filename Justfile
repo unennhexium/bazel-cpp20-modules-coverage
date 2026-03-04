@@ -54,7 +54,7 @@ query $pack="modules":
     	--starlark:expr='providers(target)["InstrumentedFilesInfo"]' \
     	--config=coverage //"$pack":test
 
-# Provide '-0' to inculde all files in the list
+# Provide '-0' to include all files in the list
 
 number_of_files := "20"
 

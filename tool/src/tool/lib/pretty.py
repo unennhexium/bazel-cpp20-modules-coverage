@@ -18,7 +18,7 @@ def display_top(
     colored: bool = False,
 ):
     """
-    Display the `limimt` lines allocating the most memory with a pretty
+    Display the `limit` lines allocating the most memory with a pretty
     output ignoring <frozen importlib._bootstrap> and <unknown> files.
     """
     NUM, FILE, LINE, SIZE, CR = (  # noqa: N806

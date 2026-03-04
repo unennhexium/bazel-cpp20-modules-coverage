@@ -73,7 +73,7 @@ Source files to process.
         ),
         "out_ext": attr.string(
             doc = """\
-Extension to use for ouput files, e.g.
+Extension to use for output files, e.g.
 providing '.cpp' with 'main.cppm' in `srcrs`
 will output 'main.cpp'.
             """,
@@ -81,14 +81,14 @@ will output 'main.cpp'.
         "local_defines": attr.string_list(
             doc = """\
 Clang preprocessor defines, will be prepended with '-D', e.g.
-providing 'COVERAGE' vill append '-DCOVERAGE' to the list of
+providing 'COVERAGE' will append '-DCOVERAGE' to the list of
 Clang options.
             """,
         ),
         "keep_comments": attr.bool(
             default = True,
             doc = """\
-Whether to keep `#include`-s or remove them completelly.
+Whether to keep `#include`-s or remove them completely.
 This works by excluding '-C' from the list of options supplied
 to Clang. By default '-C' is included in this list.
             """,

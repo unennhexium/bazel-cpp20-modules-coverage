@@ -59,13 +59,13 @@ def parse_arguments(log_levels: dict[str, int]) -> Namespace:
 
     {CY}mid{CR} stage
 
-    Process remaining derictives with clang preprocessor with {CG}-C{CR} specified
+    Process remaining directives with clang preprocessor with {CG}-C{CR} specified
     by default (see {CG}-K{CR},{CC}--keep{CR} option) to retain comments and {CG}-P{CR}
-    to not include a line markers at the beggining of the file.
+    to not include a line markers at the beginning of the file.
 
     {CY}post{CR} stage
 
-    Remove guarding markers and commented derictives which do not have a
+    Remove guarding markers and commented directives which do not have a
     guard anymore since clang preprocessor has removed the range of lines,
     because of not satisfied {CM}#ifdef{CR}/{CM}#ifndef{CR} pragmas around the marker.
         """,  # noqa: E501
@@ -99,15 +99,15 @@ def parse_arguments(log_levels: dict[str, int]) -> Namespace:
     {CG}-I{CR},{CC}--ibuff{CR} and {CG}-O{CC},{CC}--outbuf{CR} options require {CI}stdbuf{CR} executable to be in {CM}$PATH{CR}.
 
 {CB}CAVEATS{CR}
-    The script proces input files into output files in pairs. If the number
+    The script process input files into output files in pairs. If the number
     of input and output files deffer, the script will stop when the shortest
     sequence is exhausted.
 
-    The exception is no ouput specified; in this case the resulting lines
-    are concatenaited into stdout. This is to assist testing a simple
+    The exception is no output specified; in this case the resulting lines
+    are concatenated into stdout. This is to assist testing a simple
     configurations.
 
-    Each pair is processed concurently, so repeated output file arguments will
+    Each pair is processed concurrently, so repeated output file arguments will
     cause the arbitrary ordering of lines inside such output file. The ordering
     is not deterministic, that is each run likely to produce the new permutation
     of output lines.
@@ -154,7 +154,7 @@ def parse_arguments(log_levels: dict[str, int]) -> Namespace:
         "--queue",
         default=0,
         help=(
-            f"line queue size limit for comminicating with {CI}clang{CR}; "
+            f"line queue size limit for communicating with {CI}clang{CR}; "
             "value <= 0 makes queue size unbound"
         ),
         metavar="SIZE",
@@ -205,7 +205,7 @@ def parse_arguments(log_levels: dict[str, int]) -> Namespace:
         "-S",
         "--script",
         help=(
-            "run shell scrpt instead of the default "
+            "run shell script instead of the default "
             f"{CI}clang{CR} command (see {CB}NOTES{CR})"
         ),
     )

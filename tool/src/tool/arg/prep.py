@@ -146,7 +146,7 @@ class Arguments:
             if (ll_int := levels.get(ll)) is not None:
                 return ll_int
             msg = (
-                "Invalid LOG_LEVEL environment veriable value. "
+                "Invalid LOG_LEVEL environment variable value. "
                 f"Possible values: {levels.keys()}"
             )
             raise ArgumentError(None, msg)

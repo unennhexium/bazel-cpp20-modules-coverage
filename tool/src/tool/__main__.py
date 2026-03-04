@@ -16,7 +16,7 @@ from tool.lib.deco import time, trace
 from tool.log.logger import init, logger
 from tool.proc.filter import filter_
 from tool.proc.gather import gather
-from tool.proc.submmit import submit
+from tool.proc.submit import submit
 
 if TYPE_CHECKING:
     from pathlib import Path

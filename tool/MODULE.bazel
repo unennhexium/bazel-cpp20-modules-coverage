@@ -25,7 +25,7 @@ local_runtime_toolchains_repo = use_repo_rule(
     "local_runtime_toolchains_repo",
 )
 
-# # Declare explit toolchains
+# # Declare explicit toolchains
 
 # Step 1: Define the local runtime (pin by absolute path or name on PATH).
 local_runtime_repo(

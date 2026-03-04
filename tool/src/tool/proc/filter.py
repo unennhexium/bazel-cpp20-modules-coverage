@@ -44,7 +44,7 @@ def filter_(
     is_acquired = False
     stage_post = args.stages.post
     if cache_stdin and path_in.as_posix() == "/dev/stdin":
-        logger.debug("checking stdin cache, aquire the lock")
+        logger.debug("checking stdin cache, acquire the lock")
         lock.acquire()
         is_acquired = True
         if stdin_cache is None:
@@ -52,7 +52,7 @@ def filter_(
             stdin_cache = []
             stage_post = cacher(stage_post)
         else:
-            logger.debug("stdin cache already poulated , write it out, do not filter")
+            logger.debug("stdin cache already populated , write it out, do not filter")
             with path_out.open("w", encoding="utf-8") as file_out:
                 file_out.writelines("".join(stdin_cache))
             lock.release()
@@ -80,10 +80,10 @@ def filter_(
         res_itor = stage_post(res_itor)
         for ind, line in enumerate(res_itor):
             file_out.write(line)
-            logger.debug("%d line%s recieved", ind + 1, plural(ind))
+            logger.debug("%d line%s received", ind + 1, plural(ind))
     logger.info("end filtering: %s -> %s", path_in.as_posix(), path_out.as_posix())
-    # We should chech thread-local varable, since
-    # the `lock` can be scquired by the other thread.
+    # We should check thread-local variable, since
+    # the `lock` can be acquired by the other thread.
     if is_acquired:
         logger.debug("end caching stdin, release the lock")
         lock.release()

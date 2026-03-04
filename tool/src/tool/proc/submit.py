@@ -23,7 +23,7 @@ def submit(
     for ind, io in enumerate(ios):
         i, o = (p.as_posix() for p in io)
         logger.info(
-            "%d file%s sumbitted: %s -> %s",
+            "%d file%s submitted: %s -> %s",
             ind + 1,
             plural(ind),
             i,
