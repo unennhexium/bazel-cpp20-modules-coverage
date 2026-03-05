@@ -1,4 +1,5 @@
 __pycache__
+.coverage
 .devenv*
 .direnv
 .mypy_cache
@@ -7,6 +8,7 @@ __pycache__
 .ruff_cache
 .venv
 bazel-*
+coverage.lcov
 devenv.local.nix
 devenv.local.yaml
 dist

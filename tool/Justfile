@@ -25,6 +25,11 @@ test:
 check:
     uv run -- mypy src/tool/__main__.py
 
+# Produce coverage report.
+[group("quality")]
+cov:
+    uv run -- pytest --cov --cov-report lcov
+
 python := "uv run -- "
 prog := python + "tool"
 
