@@ -1,14 +1,14 @@
 { pkgs, ... }: {
   packages = with pkgs; [
+    bazelisk
     coreutils
     git
+    jq
     just
-    bazelisk
-    llvmPackages_22.libcxxClang
     lcov
+    llvmPackages_22.libcxxClang
     nil
     nixfmt
-    jq
   ];
   scripts.bazel.exec = ''bazelisk "$@"'';
 }

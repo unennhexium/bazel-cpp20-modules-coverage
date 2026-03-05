@@ -28,7 +28,7 @@ in {
     UV_PYTHON = config.languages.python.package.interpreter;
     UV_PYTHON_DOWNLOADS = "never";
   };
-  packages = [ tool ] ++ (with pkgs; [ ruff asciinema_3 termsvg ]);
+  packages = [ tool ] ++ (with pkgs; [ asciinema_3 bazelisk ruff termsvg ]);
   languages.python = {
     enable = true;
     package = python;
@@ -44,7 +44,8 @@ in {
     [[ -d bazel-external ]] || ln -sf "$(bazel info execution_root)"/external bazel-external
     source "$DEVENV_STATE"/venv/bin/activate
   '';
-  tasks."py:test".exec = "uv run -- pytest";
+  scripts.bazel.exec = ''bazelisk "$@"'';
+  tasks."py:test".exec = "uv run -- pytest --verbosity=4 -rA";
   tasks."py:check".exec = "uv run -- mypy src/tool/__main__.py";
   outputs = { inherit tool; };
 }
