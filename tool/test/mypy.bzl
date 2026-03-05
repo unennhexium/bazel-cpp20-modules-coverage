@@ -1,3 +1,7 @@
+"""
+Print all runfiles available to find the mypy executable.
+"""
+
 def _mypy_check_impl(ctx):
     mypy = ctx.executable._mypy
     srcs = ctx.files.srcs

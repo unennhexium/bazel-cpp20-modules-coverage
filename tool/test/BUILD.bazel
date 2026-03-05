@@ -1,5 +1,5 @@
-load("@//test:mypy.bzl", "mypy_check")
-load("@//:rule.bzl", "cc_pp")
+load("mypy.bzl", "mypy_check")
+load("//:rule.bzl", "cc_pp")
 load("@rules_python//python:defs.bzl", "py_test", "py_binary")
 load("@rules_python//python/entry_points:py_console_script_binary.bzl", "py_console_script_binary")
 

@@ -1,3 +1,7 @@
+"""
+Preprocess C/C++ pragmas with Clang excluding `#includes`-s.
+"""
+
 def _preprocess_impl(ctx):
     py_toolchain = ctx.toolchains["@rules_python//python:toolchain_type"]
     if not py_toolchain or not py_toolchain.py3_runtime:
@@ -15,6 +19,14 @@ def _preprocess_impl(ctx):
     if ctx.attr.disable:
         args.add_all(("--stage", "none"))
 
+    args.add_all(as_opt_args("-i", srcs))
+    args.add_all(as_opt_args("-D", ctx.attr.local_defines))
+
+    if not ctx.attr.keep_comments:
+        args.add("--no-keep")
+
+    args.add("--")
+
     outs = []
     for src in srcs:
         stem, ext = src.basename.rsplit(".", 1)
@@ -22,13 +34,7 @@ def _preprocess_impl(ctx):
         out = ctx.actions.declare_file(src.dirname + "/" + basename)
         outs.append(out)
 
-    args.add_all(as_opt_args("-o", outs))
-    args.add_all(as_opt_args("-D", ctx.attr.local_defines))
-
-    if not ctx.attr.keep_comments:
-        args.add("--no-keep")
-
-    args.add_all(srcs)
+    args.add_all(outs)
 
     ctx.actions.run(
         executable = interpreter,
@@ -39,7 +45,7 @@ def _preprocess_impl(ctx):
         env = {
             "TOOL_LOG_LEVEL": "INFO",
             "TOOL_COLOR": "never",
-            "TOOL_TRUNCATE": "never",
+            "TOOL_WIDTH": "-1",
         },
         mnemonic = "PPTool",
         progress_message = "Processing `srcs` files with tool.",

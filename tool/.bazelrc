@@ -3,6 +3,7 @@
 # build --@rules_python//python/config_settings:python_version=3.14
 
 test --test_output=streamed
+# test --nocache_test_results
 # common --subcommands
 # common --verbose_failures
 # common --sandbox_debug
