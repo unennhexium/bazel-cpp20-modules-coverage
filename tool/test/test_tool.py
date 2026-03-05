@@ -5,10 +5,12 @@ import re
 import stat
 import sys
 from pathlib import Path
-from subprocess import DEVNULL, PIPE, Popen, TimeoutExpired  # noqa: S404
 from typing import NamedTuple
+from unittest.mock import Mock, mock_open, patch
 
 import pytest
+
+from tool import main
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, *sys.argv[1:]]))
@@ -74,20 +76,20 @@ def file() -> Path:
 
 
 def test_pre(tool: Tool, file: Path):
-    proc = Popen(  # noqa: S602
-        f"{tool.prog} -s pre -o - {file}",
-        shell=True,
-        stdin=DEVNULL,
-        stdout=PIPE,
-        stderr=PIPE,
-        text=True,
-        env=tool.env,
-    )
-    try:
-        pre, err = proc.communicate(timeout=1.0)
-    except TimeoutExpired:
-        pytest.fail("Timeout expired.")
-    assert len(err) == 0
+    orig = Path.open
+    m_stdout = mock_open()
+
+    def open_(self: Path, *args, **kwargs):
+        if self.as_posix() == "/dev/stdout":
+            return m_stdout()
+        return orig(self, *args, **kwargs)
+
+    with (
+        patch("sys.argv", ["-", "-s", "pre", "-o", "-", file.as_posix()]),
+        patch("os.environ", tool.env),
+        patch("pathlib.Path.open", open_),
+    ):
+        main()
     pattern = """\
 int (\\d+);
 /\\* (\\d+)#include <gtest/gtest\\.h> \\*/
@@ -107,6 +109,7 @@ TEST\\(LibTest, HelloWorld\\) {
   EXPECT_EQ\\(greet\\(\\), "Hello, World!"\\);
 }
 """
+    pre = "".join(c.args[0] for c in m_stdout.return_value.write.call_args_list)
     err_str = f"\n\n[PAT]\n\n{pattern}\n\n[PRE]\n\n{pre}"
     matches = re.findall(pattern, pre)
     assert len(matches) == 1, err_str
@@ -117,25 +120,30 @@ TEST\\(LibTest, HelloWorld\\) {
 
 
 def test_mid(tool: Tool, file: Path):
-    proc = Popen(  # noqa: S602
-        f"{tool.prog} -s mid -o - {file}",
-        shell=True,
-        stdin=DEVNULL,
-        stdout=PIPE,
-        stderr=PIPE,
-        text=True,
-        env=tool.env,
-    )
-    try:
-        mid, err = proc.communicate(timeout=1.0)
-    except TimeoutExpired:
-        pytest.fail("Timeout expired.")
+    orig = Path.open
+    m_stdout = mock_open()
+    m_exit = Mock()
+
+    def open_(self: Path, *args, **kwargs):
+        if self.as_posix() == "/dev/stdout":
+            return m_stdout()
+        return orig(self, *args, **kwargs)
+
+    with (
+        patch("sys.argv", ["-", "-s", "mid", "-o", "-", file.as_posix()]),
+        patch("os.environ", tool.env),
+        patch("pathlib.Path.open", open_),
+        patch("sys.exit", m_exit),
+    ):
+        main()
     lines = """\
 import lib;
 TEST(LibTest, HelloWorld) {
   EXPECT_EQ(greet(), "Hello, World!");
 }
 """
+    mid = "".join(c.args[0] for c in m_stdout.return_value.write.call_args_list)
+    err = "".join(c.args[0] for c in m_exit.call_args_list)
     err_str = ["[EXP]", lines, "[MID]", mid]
     for e, r in zip(lines.split("\n"), mid.split("\n"), strict=False):
         assert e == r, "\n" + "\n\n".join((f"{e=}\n{r=}", *err_str))
@@ -144,24 +152,32 @@ TEST(LibTest, HelloWorld) {
 
 
 def test_mid_define(tool: Tool, file: Path):
-    proc = Popen(  # noqa: S602
-        f"{tool.prog} -s mid -D COVERAGE=1 {file} -o -",
-        shell=True,
-        stdin=DEVNULL,
-        stdout=PIPE,
-        stderr=PIPE,
-        text=True,
-        env=tool.env,
-    )
-    try:
-        mid, err = proc.communicate(timeout=1.0)
-    except TimeoutExpired:
-        pytest.fail("Timeout expired.")
+    orig = Path.open
+    m_stdout = mock_open()
+    m_exit = Mock()
+
+    def open_(self: Path, *args, **kwargs):
+        if self.as_posix() == "/dev/stdout":
+            return m_stdout()
+        return orig(self, *args, **kwargs)
+
+    with (
+        patch(
+            "sys.argv",
+            ["-", "-s", "mid", "-D", "COVERAGE=1", "-o", "-", file.as_posix()],
+        ),
+        patch("os.environ", tool.env),
+        patch("pathlib.Path.open", open_),
+        patch("sys.exit", m_exit),
+    ):
+        main()
     lines = """\
 TEST(LibTest, HelloWorld) {
   EXPECT_EQ(greet(), "Hello, World!");
 }
 """
+    mid = "".join(c.args[0] for c in m_stdout.return_value.write.call_args_list)
+    err = "".join(c.args[0] for c in m_exit.call_args_list)
     err_str = ["[EXP]", lines, "[MID]", mid]
     for e, r in zip(lines.split("\n"), mid.split("\n"), strict=False):
         assert e == r, "\n" + "\n\n".join((f"{e=}\n{r=}", *err_str))
@@ -169,20 +185,24 @@ TEST(LibTest, HelloWorld) {
 
 
 def test_post(tool: Tool, file: Path):
-    proc = Popen(  # noqa: S602
-        f"{tool.prog} -s post -o - {file}",
-        shell=True,
-        stdin=DEVNULL,
-        stdout=PIPE,
-        stderr=PIPE,
-        text=True,
-        env=tool.env,
-    )
-    try:
-        post, err = proc.communicate(timeout=1.0)
-    except TimeoutExpired:
-        pytest.fail("Timeout expired.")
-    assert len(err) == 0
+    orig = Path.open
+    m_stdout = mock_open()
+
+    def open_(self: Path, *args, **kwargs):
+        if self.as_posix() == "/dev/stdout":
+            return m_stdout()
+        return orig(self, *args, **kwargs)
+
+    with (
+        patch(
+            "sys.argv",
+            ["-", "-s", "post", "-o", "-", file.as_posix()],
+        ),
+        patch("os.environ", tool.env),
+        patch("pathlib.Path.open", open_),
+    ):
+        main()
+    post = "".join(c.args[0] for c in m_stdout.return_value.write.call_args_list)
     with file.open("r", encoding="utf-8") as f:
         lines = "".join(f.readlines())
         err_str = ["[IN]", lines, "[POST]", post]
@@ -191,34 +211,43 @@ def test_post(tool: Tool, file: Path):
 
 
 def test_pipe(tool: Tool, file: Path):
-    proc = Popen(  # noqa: S602
-        f"{tool.prog} -s pre -o - {file}",
-        shell=True,
-        stdin=DEVNULL,
-        stdout=PIPE,
-        stderr=PIPE,
-        text=True,
-        env=tool.env,
-    )
-    try:
-        pre, err = proc.communicate(timeout=1.0)
-    except TimeoutExpired:
-        pytest.fail("Timeout expired.")
-    assert len(err) == 0
-    proc = Popen(  # noqa: S602
-        f"{tool.prog} -s post -o - {file}",
-        shell=True,
-        stdin=PIPE,
-        stdout=PIPE,
-        stderr=PIPE,
-        text=True,
-        env=tool.env,
-    )
-    try:
-        post, err = proc.communicate(pre, timeout=1.0)
-    except TimeoutExpired:
-        pytest.fail("Timeout expired.")
-    assert len(err) == 0
+    orig = Path.open
+    m_stdout = mock_open()
+    m_stdin = None
+
+    def open_(self: Path, *args, **kwargs):
+        match self.as_posix():
+            case "/dev/stdout":
+                return m_stdout()
+            case "/dev/stdin":
+                assert m_stdin is not None
+                return m_stdin()
+        return orig(self, *args, **kwargs)
+
+    with (
+        patch(
+            "sys.argv",
+            ["-", "-s", "pre", "-o", "-", file.as_posix()],
+        ),
+        patch("os.environ", tool.env),
+        patch("pathlib.Path.open", open_),
+    ):
+        main()
+    pre = "".join(c.args[0] for c in m_stdout.return_value.write.call_args_list)
+
+    m_stdout.reset_mock()
+    m_stdin = mock_open(read_data=pre)
+
+    with (
+        patch(
+            "sys.argv",
+            ["-", "-s", "post", "-o", "-", "-"],
+        ),
+        patch("os.environ", tool.env),
+        patch("pathlib.Path.open", open_),
+    ):
+        main()
+    post = "".join(c.args[0] for c in m_stdout.return_value.write.call_args_list)
     with file.open("r", encoding="utf-8") as f:
         lines = "".join(f.readlines())
         err_str = ["[IN]", lines, "[PRE]", pre, "[POST]", post]
@@ -227,20 +256,25 @@ def test_pipe(tool: Tool, file: Path):
 
 
 def test_round_trip(tool: Tool, file: Path):
-    proc = Popen(  # noqa: S602
-        f"{tool.prog} -s pre post -o - {file}",
-        shell=True,
-        stdin=DEVNULL,
-        stdout=PIPE,
-        stderr=PIPE,
-        text=True,
-        env=tool.env,
-    )
-    try:
-        post, err = proc.communicate(timeout=1.0)
-    except TimeoutExpired:
-        pytest.fail("Timeout expired.")
-    assert len(err) == 0
+    orig = Path.open
+    m_stdout = mock_open()
+
+    def open_(self: Path, *args, **kwargs):
+        match self.as_posix():
+            case "/dev/stdout":
+                return m_stdout()
+        return orig(self, *args, **kwargs)
+
+    with (
+        patch(
+            "sys.argv",
+            ["-", "-s", "pre", "post", "-o", "-", file.as_posix()],
+        ),
+        patch("os.environ", tool.env),
+        patch("pathlib.Path.open", open_),
+    ):
+        main()
+    post = "".join(c.args[0] for c in m_stdout.return_value.write.call_args_list)
 
     with file.open("r", encoding="utf-8") as f:
         lines = "".join(f.readlines())
@@ -250,20 +284,25 @@ def test_round_trip(tool: Tool, file: Path):
 
 
 def test_full(tool: Tool, file: Path):
-    proc = Popen(  # noqa: S602
-        f"{tool.prog} {file} -o -",
-        shell=True,
-        stdin=DEVNULL,
-        stdout=PIPE,
-        stderr=PIPE,
-        text=True,
-        env=tool.env,
-    )
-    try:
-        full, err = proc.communicate(timeout=1.0)
-    except TimeoutExpired:
-        pytest.fail("Timeout expired.")
-    assert len(err) == 0
+    orig = Path.open
+    m_stdout = mock_open()
+
+    def open_(self: Path, *args, **kwargs):
+        match self.as_posix():
+            case "/dev/stdout":
+                return m_stdout()
+        return orig(self, *args, **kwargs)
+
+    with (
+        patch(
+            "sys.argv",
+            ["-", "-o", "-", file.as_posix()],
+        ),
+        patch("os.environ", tool.env),
+        patch("pathlib.Path.open", open_),
+    ):
+        main()
+    full = "".join(c.args[0] for c in m_stdout.return_value.write.call_args_list)
     lines = """\
 #include <gtest/gtest.h>
 import lib;
@@ -277,20 +316,25 @@ TEST(LibTest, HelloWorld) {
 
 
 def test_full_define(tool: Tool, file: Path):
-    proc = Popen(  # noqa: S602
-        f"{tool.prog} -D COVERAGE -o - {file}",
-        shell=True,
-        stdin=DEVNULL,
-        stdout=PIPE,
-        stderr=PIPE,
-        text=True,
-        env=tool.env,
-    )
-    try:
-        full, err = proc.communicate(timeout=1.0)
-    except TimeoutExpired:
-        pytest.fail("Timeout expired.")
-    assert len(err) == 0
+    orig = Path.open
+    m_stdout = mock_open()
+
+    def open_(self: Path, *args, **kwargs):
+        match self.as_posix():
+            case "/dev/stdout":
+                return m_stdout()
+        return orig(self, *args, **kwargs)
+
+    with (
+        patch(
+            "sys.argv",
+            ["-", "-D", "COVERAGE", "-o", "-", file.as_posix()],
+        ),
+        patch("os.environ", tool.env),
+        patch("pathlib.Path.open", open_),
+    ):
+        main()
+    full = "".join(c.args[0] for c in m_stdout.return_value.write.call_args_list)
     lines = """\
 #include <gtest/gtest.h>
 #include "lib.cpp"
@@ -304,20 +348,25 @@ TEST(LibTest, HelloWorld) {
 
 
 def test_full_no_keep(tool: Tool, file: Path):
-    proc = Popen(  # noqa: S602
-        f"{tool.prog} --no-keep -o - {file}",
-        shell=True,
-        stdin=DEVNULL,
-        stdout=PIPE,
-        stderr=PIPE,
-        text=True,
-        env=tool.env,
-    )
-    try:
-        full, err = proc.communicate(timeout=1.0)
-    except TimeoutExpired:
-        pytest.fail("Timeout expired.")
-    assert len(err) == 0
+    orig = Path.open
+    m_stdout = mock_open()
+
+    def open_(self: Path, *args, **kwargs):
+        match self.as_posix():
+            case "/dev/stdout":
+                return m_stdout()
+        return orig(self, *args, **kwargs)
+
+    with (
+        patch(
+            "sys.argv",
+            ["-", "--no-keep", "-o", "-", file.as_posix()],
+        ),
+        patch("os.environ", tool.env),
+        patch("pathlib.Path.open", open_),
+    ):
+        main()
+    full = "".join(c.args[0] for c in m_stdout.return_value.write.call_args_list)
     lines = """\
 import lib;
 TEST(LibTest, HelloWorld) {
@@ -330,20 +379,25 @@ TEST(LibTest, HelloWorld) {
 
 
 def test_full_no_keep_define(tool: Tool, file: Path):
-    proc = Popen(  # noqa: S602
-        f"{tool.prog} --no-keep -D COVERAGE -o - {file}",
-        shell=True,
-        stdin=DEVNULL,
-        stdout=PIPE,
-        stderr=PIPE,
-        text=True,
-        env=tool.env,
-    )
-    try:
-        full, err = proc.communicate(timeout=1.0)
-    except TimeoutExpired:
-        pytest.fail("Timeout expired.")
-    assert len(err) == 0
+    orig = Path.open
+    m_stdout = mock_open()
+
+    def open_(self: Path, *args, **kwargs):
+        match self.as_posix():
+            case "/dev/stdout":
+                return m_stdout()
+        return orig(self, *args, **kwargs)
+
+    with (
+        patch(
+            "sys.argv",
+            ["-", "--no-keep", "-D", "COVERAGE", "-o", "-", file.as_posix()],
+        ),
+        patch("os.environ", tool.env),
+        patch("pathlib.Path.open", open_),
+    ):
+        main()
+    full = "".join(c.args[0] for c in m_stdout.return_value.write.call_args_list)
     lines = """\
 TEST(LibTest, HelloWorld) {
   EXPECT_EQ(greet(), "Hello, World!");
@@ -355,22 +409,28 @@ TEST(LibTest, HelloWorld) {
 
 
 def test_stdin_cache(tool: Tool, file: Path):
-    proc = Popen(  # noqa: S602
-        f"cat {file} | {tool.prog} - - -o - -o -",
-        shell=True,
-        stdin=DEVNULL,
-        stdout=PIPE,
-        stderr=PIPE,
-        text=True,
-        env=tool.env,
-    )
-    try:
-        # with file.open("r", encoding="utf-8") as file_in:
-        #     print(lines := file_in.readlines())
-        full, err = proc.communicate(timeout=1.0)
-    except TimeoutExpired:
-        pytest.fail("Timeout expired.")
-    assert len(err) == 0
+    orig = Path.open
+    m_stdout = mock_open()
+
+    def open_(self: Path, *args, **kwargs):
+        match self.as_posix():
+            case "/dev/stdout":
+                return m_stdout()
+            case "/dev/stdin":
+                return file.open(*args, **kwargs)
+        return orig(self, *args, **kwargs)
+
+    with (
+        patch(
+            "sys.argv",
+            ["-", "-", "-", "-o", "-", "-o", "-"],
+        ),
+        patch("os.environ", tool.env),
+        patch("pathlib.Path.open", open_),
+    ):
+        main()
+    full = "".join(c.args[0] for c in m_stdout.return_value.write.call_args_list)
+    full += m_stdout.return_value.writelines.call_args_list[0].args[0]
     lines = """\
 #include <gtest/gtest.h>
 import lib;
@@ -383,6 +443,6 @@ TEST(LibTest, HelloWorld) {
   EXPECT_EQ(greet(), "Hello, World!");
 }
 """
-    err_str = ["[EXP]", lines, "[POST]", full]
+    err_str = ["[EXP]", lines, "[POST]", full, "[CALLS]", str(m_stdout.mock_calls)]
     for e, r in zip(lines.split("\n"), full.split("\n"), strict=False):
         assert e == r, "\n" + "\n\n".join((f"{e=}\n{r=}", *err_str))

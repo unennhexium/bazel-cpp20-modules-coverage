@@ -14,7 +14,7 @@ from tool.arg.parse import parse_arguments
 from tool.arg.prep import Arguments
 from tool.lib.deco import time, trace
 from tool.log.logger import init, logger
-from tool.proc.filter import filter_
+from tool.proc.filter import filter_, reset_cache
 from tool.proc.gather import gather
 from tool.proc.submit import submit
 
@@ -30,6 +30,10 @@ def main():
     logger.info("version:%s", sys.version)
     logger.info("argv:%s", sys.argv)
     process(args)
+    # We need to reset cache in case "filter" module was
+    # loaded once, then "filter_" is runing multiple times,
+    # e.g. in tests.
+    reset_cache()
 
 
 def process(args: Arguments) -> None:

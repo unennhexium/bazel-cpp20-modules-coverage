@@ -14,18 +14,24 @@ if TYPE_CHECKING:
 
     from tool.arg.prep import Arguments
 
-stdin_cache: list[str] | None = None
-lock = Lock()
+STDIN_CACHE: list[str] | None = None
+LOCK = Lock()
+
+
+def reset_cache():
+    global STDIN_CACHE  # noqa: PLW0603
+    STDIN_CACHE = None
+
 
 type Streamer = Callable[[Iterator[str]], Iterator[str]]
 
 
 def cacher(streamer: Streamer) -> Streamer:
-    global stdin_cache  # noqa: PLW0602 # Global state coupled with `lock`.
+    global STDIN_CACHE  # noqa: PLW0602 # Global state coupled with `lock`.
 
     def _streamer(stream: Iterator[str]) -> Iterator[str]:
         for ind, line in enumerate(streamer(stream)):
-            stdin_cache.append(line)
+            STDIN_CACHE.append(line)
             logger.debug("%d line%s saved into stdin cache", ind + 1, plural(ind))
             yield line
 
@@ -40,22 +46,22 @@ def filter_(
     *,
     cache_stdin: bool = True,
 ) -> None:
-    global stdin_cache  # noqa: PLW0603 # Global state coupled with `lock`.
+    global STDIN_CACHE  # noqa: PLW0603 # Global state coupled with `lock`.
     is_acquired = False
     stage_post = args.stages.post
     if cache_stdin and path_in.as_posix() == "/dev/stdin":
         logger.debug("checking stdin cache, acquire the lock")
-        lock.acquire()
+        LOCK.acquire()
         is_acquired = True
-        if stdin_cache is None:
+        if STDIN_CACHE is None:
             logger.debug("stdin cache is empty, do filter and populate")
-            stdin_cache = []
+            STDIN_CACHE = []
             stage_post = cacher(stage_post)
         else:
             logger.debug("stdin cache already populated , write it out, do not filter")
             with path_out.open("w", encoding="utf-8") as file_out:
-                file_out.writelines("".join(stdin_cache))
-            lock.release()
+                file_out.writelines("".join(STDIN_CACHE))
+            LOCK.release()
             return
     logger.debug("start filtering: %s -> %s", path_in.as_posix(), path_out.as_posix())
     if not path_out.exists():
@@ -86,4 +92,4 @@ def filter_(
     # the `lock` can be acquired by the other thread.
     if is_acquired:
         logger.debug("end caching stdin, release the lock")
-        lock.release()
+        LOCK.release()

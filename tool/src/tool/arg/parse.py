@@ -99,18 +99,24 @@ def parse_arguments(log_levels: dict[str, int]) -> Namespace:
     {CG}-I{CR},{CC}--ibuff{CR} and {CG}-O{CC},{CC}--outbuf{CR} options require {CI}stdbuf{CR} executable to be in {CM}$PATH{CR}.
 
 {CB}CAVEATS{CR}
-    The script process input files into output files in pairs. If the number
+    The script processes input files into output files in pairs. If the number
     of input and output files deffer, the script will stop when the shortest
     sequence is exhausted.
 
     The exception is no output specified; in this case the resulting lines
     are concatenated into stdout. This is to assist testing a simple
-    configurations.
+    configurations. See {CG}-t{CR} flag.
 
     Each pair is processed concurrently, so repeated output file arguments will
-    cause the arbitrary ordering of lines inside such output file. The ordering
+    cause the arbitrary ordering of lines inside those output file. The ordering
     is not deterministic, that is each run likely to produce the new permutation
     of output lines.
+
+    The exception is stdin input specified multiple times; in this case repeated
+    output file arguments paired with stdin are processed sequentially but still
+    in arbitrary order; since input (stdin) is the same for each pair, the same
+    should be the output, so the first available result is reused. That is, output
+    consist of repeated fragments, the order of which cannot be noticed.
         """,  # noqa: E501
         fromfile_prefix_chars="@",
         prefix_chars="-+",
