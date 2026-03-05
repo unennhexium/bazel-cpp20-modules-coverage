@@ -36,7 +36,7 @@ def main():
 
 
 def process(args: Arguments) -> None:
-    paths = args.paths
+    paths = args.path
     ios = list(zip(paths.in_, paths.out_, strict=False))
 
     seed = machineid.hashed_id(sys.argv[0], winregistry=False)

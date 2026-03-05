@@ -18,12 +18,9 @@ if TYPE_CHECKING:
 class Action(Action, ABC):
     called = False
 
-    def __init__(self, option_strings, **kwargs):
-        super().__init__(option_strings, **kwargs)
-
-    @staticmethod
     @abstractmethod
     def prepare(
+        self,
         option_arguments: Sequence[str],
         *,
         namespace: Namespace | None = None,
@@ -35,5 +32,5 @@ class Action(Action, ABC):
         values: Sequence[str],
         _option_string=None,
     ) -> None:
-        res = self.__class__.prepare(values, namespace=namespace)
+        res = self.__class__.prepare(self, values, namespace=namespace)
         setattr(namespace, self.dest, res)

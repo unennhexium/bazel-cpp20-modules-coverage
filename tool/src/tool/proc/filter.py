@@ -46,7 +46,7 @@ def filter_(
 ) -> None:
     global STDIN_CACHE  # noqa: PLW0603 # Global state coupled with `lock`.
     is_acquired = False
-    stage_post = args.stages.post
+    stage_post = args.stage.post
     if cache_stdin and path_in.as_posix() == "/dev/stdin":
         logger.debug("checking stdin cache, acquire the lock")
         LOCK.acquire()
@@ -79,8 +79,8 @@ def filter_(
         in_itor = logger_(in_itor)
         if args.raw.range is not None:
             in_itor = select(file_in, args.sels.rng)
-        res_itor = args.stages.pre(in_itor, args.sels.pat)
-        res_itor = args.stages.mid(res_itor, args)
+        res_itor = args.stage.pre(in_itor, args.sels.pat)
+        res_itor = args.stage.mid(res_itor, args)
         res_itor = stage_post(res_itor)
         for ind, line in enumerate(res_itor):
             file_out.write(line)

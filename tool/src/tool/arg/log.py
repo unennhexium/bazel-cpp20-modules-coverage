@@ -14,8 +14,7 @@ if TYPE_CHECKING:
 
 def level(log_levels: dict[str, int]):
     class Level(Action):
-        @staticmethod
-        def prepare(option_arguments: Sequence[str], **_kwargs) -> int:
+        def prepare(self, option_arguments: Sequence[str], **_kwargs) -> int:  # noqa: PLR6301
             args = option_arguments
             if (ll := os.getenv("TOOL_LOG_LEVEL")) is not None:
                 if len(ll) == 0:
@@ -33,8 +32,7 @@ def level(log_levels: dict[str, int]):
 
 
 class Color(Action):
-    @staticmethod
-    def prepare(option_arguments: Sequence[str], **_kwargs) -> bool:
+    def prepare(self: Color | None, option_arguments: Sequence[str], **_kwargs) -> bool:  # noqa: PLR6301
         if (cl := os.getenv("TOOL_COLOR")) is not None:
             match cl:
                 case "auto":

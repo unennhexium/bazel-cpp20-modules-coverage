@@ -18,7 +18,7 @@ dbg_runfiles:
 # Run the project tests.
 [group("quality")]
 test:
-    uv run -- pytest
+    uv run -- pytest --verbosity=4 -rA
 
 # Type check the project.
 [group("quality")]
@@ -60,8 +60,8 @@ pipe:
 [group("test")]
 all:
     @mkdir -vp out && rm -vf out/*
-    @TOOL_LOG_LEVEL= {{ prog }} -C always -s pre mid post -DCOVERAGE \
-            -i test/data/main.cpp test/data/test.cpp test/data/lib.cppm \
+    @TOOL_LOG_LEVEL= {{ prog }} -s pre mid post -DCOVERAGE \
+            -i test/data/main.cpp -i test/data/test.cpp -i test/data/lib.cppm \
             -- out/main.pp.cpp    out/test.pp.cpp    out/lib.pp.cpp
 
 # Run each preprocessing stage piped on into another.

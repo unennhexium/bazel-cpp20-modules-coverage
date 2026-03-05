@@ -12,8 +12,11 @@ if TYPE_CHECKING:
 
 
 class PathIn(Action):
-    @staticmethod
-    def prepare(option_arguments: Sequence[str], **_kwargs) -> list[Path]:
+    def __init__(self, option_strings, **kwargs):
+        self.paths = []
+        super().__init__(option_strings, **kwargs)
+
+    def prepare(self, option_arguments: Sequence[str], **_kwargs) -> list[Path]:
         paths = option_arguments
         res = cast("list[Path | None]", [None]) * len(paths)
         for ind, pth in enumerate(paths):
@@ -22,12 +25,17 @@ class PathIn(Action):
             else:
                 res[ind] = Path(pth)
         assert is_list_wo_none(res)  # noqa: S101
-        return res
+        self.paths.extend(res)
+        return self.paths
 
 
 class PathOut(Action):
-    @staticmethod
+    def __init__(self, option_strings, **kwargs):
+        self.paths = []
+        super().__init__(option_strings, **kwargs)
+
     def prepare(
+        self,
         option_arguments: Sequence[str],
         *,
         namespace: Namespace,
@@ -45,4 +53,5 @@ class PathOut(Action):
             else:
                 res[ind] = Path(pth)
         assert is_list_wo_none(res)  # noqa: S101
-        return res
+        self.paths.extend(res)
+        return self.paths

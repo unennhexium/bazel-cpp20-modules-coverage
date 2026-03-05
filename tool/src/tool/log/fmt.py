@@ -41,7 +41,7 @@ class Formatter(logging.Formatter):
             case _, False:
                 return Formatter._join(record, keys)[: self.cols]
             case _, _:
-                msg = "None exhaustve `match` statement."
+                msg = f"None exhaustve `match` statement: {self.cols}, {self.colored}"
                 raise RuntimeError(msg)
 
     def _join_and_cut(self, record: LogRecord, keys: list[Field]) -> str:

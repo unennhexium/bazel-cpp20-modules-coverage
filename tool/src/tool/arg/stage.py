@@ -13,8 +13,8 @@ if TYPE_CHECKING:
 
 
 class Stage(Action):
-    @staticmethod
-    def prepare(
+    def prepare(  # noqa: PLR6301
+        self,
         option_arguments: Sequence[str],
         **_kwargs,
     ) -> tuple[LineFilter, LineFilter, LineFilter]:

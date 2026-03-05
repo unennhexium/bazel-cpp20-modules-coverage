@@ -1,12 +1,12 @@
 import re
 from functools import update_wrapper, wraps
-from pathlib import Path
+from pathlib import Path as PyPath
 from typing import NamedTuple
 
 from tool.lib.gen import LineFilter
 
 
-class PathRepr(Path):
+class PathRepr(PyPath):
     def __repr__(self) -> str:
         return self.as_posix()
 
@@ -44,8 +44,8 @@ class Select(NamedTuple):
 
 
 class Path(NamedTuple):
-    in_: list[Path]
-    out_: list[Path]
+    in_: list[PyPath]
+    out_: list[PyPath]
 
 
 class Log(NamedTuple):
