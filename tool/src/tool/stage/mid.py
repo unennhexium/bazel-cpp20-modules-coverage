@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from tool.arg.type import with_repr
 from tool.lib.popen import PopenContext
 from tool.log.logger import logger
 
@@ -11,6 +12,7 @@ if TYPE_CHECKING:
     from tool.arg.prep import Arguments
 
 
+@with_repr(lambda f: f.__name__)
 def mid(stream: Iterator[str], args: Arguments) -> Iterator[str]:
     with PopenContext(
         args.cmd,
@@ -23,18 +25,15 @@ def mid(stream: Iterator[str], args: Arguments) -> Iterator[str]:
         q_out,
         _,
     ):
-        try:
-            for line in stream:
-                q_in.put(line)
-            q_in.put(PopenContext.EOF)
-            for line in iter(q_out.get, PopenContext.EOF):  # type: ignore[assignment]
-                yield line
-                q_out.task_done()
+        for line in stream:
+            q_in.put(line)
+        q_in.put(PopenContext.EOF)
+        for line in iter(q_out.get, PopenContext.EOF):  # type: ignore[assignment]
+            yield line
             q_out.task_done()
-            logger.debug("finished `yield`ing")
-            for q, n in zip((q_in, q_out), ("in", "out"), strict=False):
-                logger.debug("'%s' queue approximate size:%d", n, q.qsize())
-                q.join()
-                logger.debug("a queue '%s' has joined", n)
-        except GeneratorExit:
-            logger.debug("exiting generator")
+        q_out.task_done()
+        logger.debug("finished `yield`ing")
+        for q, n in zip((q_in, q_out), ("in", "out"), strict=True):
+            logger.debug("'%s' queue approximate size:%d", n, q.qsize())
+            q.join()
+            logger.debug("a queue '%s' has joined", n)

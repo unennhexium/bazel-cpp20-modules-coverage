@@ -3,7 +3,8 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING
 
-from tool.line.delimiters import COMMENT, MARKER
+from tool.arg.type import with_repr
+from tool.line.delimiter import COMMENT, MARKER
 from tool.log.logger import logger
 
 if TYPE_CHECKING:
@@ -11,9 +12,10 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
-def pre(stream: Iterator[str], rgx: re.Pattern) -> Iterator[str]:
+@with_repr(lambda f: f.__name__)
+def pre(stream: Iterator[str], rgx: list[re.Pattern]) -> Iterator[str]:
     for line in stream:
-        if rgx.match(line):
+        if any(r.match(line) for r in rgx):
             logger.debug("%s", f"{line=}")
             rnd = random.randint(0, 999_999)  # noqa: S311
             logger.debug("%s", f"{rnd=}")

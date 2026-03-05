@@ -5,7 +5,6 @@ from logging import LogRecord
 from shutil import get_terminal_size
 from typing import ClassVar, cast
 
-from tool.arg.prep import Width
 from tool.lib.util import is_list_wo_none
 from tool.log.color import FIELD_MAP
 from tool.log.const import Color, Field
@@ -19,36 +18,38 @@ class Formatter(logging.Formatter):
         fields: list[Field],
         *,
         colored: bool = False,
-        width: tuple[Width, int] = (Width.ALWAYS, 0),
+        width: int = 0,
     ) -> None:
         self.fields: dict[Field, str | None] = dict.fromkeys(fields, None)
         self.colored = colored
         match width:
-            case Width.ALWAYS, _:
+            case 0:
                 self.cols = get_terminal_size((80, 20)).columns
-            case Width.NEVER, _:
+            case -1:
                 self.cols = 0
-            case Width.CUSTOM, cols:
+            case cols:
                 self.cols = cols
-            case _:
-                msg = "Non-exhaustive `match` statement."
-                raise RuntimeError(msg)
 
     def format(self, record: LogRecord) -> str:
         record.funcName += "()"
         keys: list[Field] = list(self.fields.keys())
-        if not self.colored:
-            return ":".join([
-                record.getMessage()
-                if fld == Field.MESSAGE
-                else str(record.__dict__[fld.value])
-                for fld in keys
-            ])
+        match self.cols, self.colored:
+            case 0, _:
+                return Formatter._join(record, keys)
+            case _, True:
+                return self._join_and_cut(record, keys)
+            case _, False:
+                return Formatter._join(record, keys)[: self.cols]
+            case _, _:
+                msg = "None exhaustve `match` statement."
+                raise RuntimeError(msg)
+
+    def _join_and_cut(self, record: LogRecord, keys: list[Field]) -> str:
         splitted = cast("list[str | None]", [None]) * len(self.fields) * 4
-        acc = 0
         cols = self.cols
         if cols < 0:
             keys.reverse()
+        acc = 0
         overflow = False
         for ind, fld in enumerate(keys):
             if fld == Field.MESSAGE:
@@ -72,6 +73,15 @@ class Formatter(logging.Formatter):
             splitted.reverse()
         assert is_list_wo_none(splitted)  # noqa: S101
         res = "".join(splitted)
-        if cols != 0 and overflow:
+        if overflow:
             return res + "…" if cols > 0 else "…" + res
         return res
+
+    @staticmethod
+    def _join(record: LogRecord, keys: list[Field]) -> str:
+        return ":".join([
+            record.getMessage()
+            if fld == Field.MESSAGE
+            else str(record.__dict__[fld.value])
+            for fld in keys
+        ])

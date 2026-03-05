@@ -2,14 +2,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from tool.arg.type import with_repr
 from tool.lib.gen import window
-from tool.line.delimiters import Marker, Pragma
+from tool.line.delimiter import Marker, Pragma
 from tool.log.logger import logger
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
+@with_repr(lambda f: f.__name__)
 def post(stream: Iterator[str]) -> Iterator[str]:
     cur: str
     nxt: str

@@ -33,23 +33,22 @@ prog := python + "tool"
 [group("test")]
 diff cnt="2":
     #!/usr/bin/env -S bash -eEuo pipefail
-    pre=$({{ prog }} -s pre -- $(realpath ../modules/test.cpp))
+    pre=$({{ prog }} -s pre -i test/data/test.cpp)
     mid=$(/usr/bin/clang -E -C -P - -DCOVERAGE <<<$pre)
-    post=$({{ prog }} -s post -- - <<<$mid)
+    post=$({{ prog }} -s post -i - <<<$mid)
     diff{{ if cnt == "2" { " -y" } else { "3" } }} \
         <(echo "$pre") \
         {{ if cnt == "2" { "" } else { "<(echo \"$mid\")" } }} \
         <(echo "$post")
-
-    # echo -e [PRE]"\n\n$pre\n" && \
-    # echo -e [MID]"\n\n$mid\n" && \
+    # echo -e [PRE]"\n\n$pre\n"
+    # echo -e [MID]"\n\n$mid\n"
     # echo -e [POST]"\n\n$post\n"
 
 # Run "pre" -> clang -> "post" pipe.
 [group("test")]
 pipe:
     @TOOL_LOG_LEVEL= \
-        {{ prog }} -s pre  -- ../modules/test.cpp | clang -E -C -P - | \
+        {{ prog }} -s pre  -i test/data/test.cpp | clang -E -C -P - | \
         {{ prog }} -s post -- -
 
 # Run all preprocessing stages.
@@ -57,23 +56,27 @@ pipe:
 all:
     @mkdir -vp out && rm -vf out/*
     @TOOL_LOG_LEVEL= {{ prog }} -C always -s pre mid post -DCOVERAGE \
-            ../modules/main.cpp ../modules/test.cpp ../modules/lib.cppm \
-            -o ../out/main.pp.cpp -o ../out/test.pp.cpp -o ../out/lib.pp.cpp
+            -i test/data/main.cpp test/data/test.cpp test/data/lib.cppm \
+            -- out/main.pp.cpp    out/test.pp.cpp    out/lib.pp.cpp
 
 # Run each preprocessing stage piped on into another.
 [group("test")]
 all_pipe:
     @print() { read -rd '' txt; echo -e "[$1]\n\n$txt\n" >&2; }; \
-    cat ../modules/test.cpp | {{ prog }} -s pre  -- - | \
-    tee >(print PRE)        | {{ prog }} -s mid  -- - | \
-    tee >(print MID)        | {{ prog }} -s post -- - | \
+    cat ../modules/test.cpp | {{ prog }} -s pre  | \
+    tee >(print PRE)        | {{ prog }} -s mid  | \
+    tee >(print MID)        | {{ prog }} -s post | \
     print POST
 
 # Run in test mode over the list of files.
 [arg("inputs", help=" \t- input files to process with script")]
 [group("test")]
 over_llvm *inputs:
-    time {{ prog }} -TMtc \\-Wno-everything {{ inputs }}
+    time {{ prog }} -TMtc \\-Wno-everything -i {{ inputs }}
+
+# Process the given line range only.
+rng:
+    {{ prog }} -r 1,-1 -i test/data/test.cpp
 
 # Capture --help output.
 [group("doc")]

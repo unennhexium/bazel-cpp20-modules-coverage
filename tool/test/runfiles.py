@@ -1,5 +1,5 @@
 # ruff: noqa: T201, SLF001
-from pathlib import Path
+from pathlib import PathRepr
 
 from python.runfiles import Runfiles
 
@@ -23,14 +23,14 @@ def main():
                 print(f"  {path} -> {target}")
     else:
         # For directory-based runfiles, we can list the directory.
-        runfiles_dir = Path(r._strategy._runfiles_root)
+        runfiles_dir = PathRepr(r._strategy._runfiles_root)
         print(f"Runfiles directory: {runfiles_dir}")
 
         # Look for mypy-related files
         for root, _dirs, files in runfiles_dir.walk():
             for file in files:
                 if "mypy" in file.lower():
-                    rel_path = Path(root, file).relative_to(runfiles_dir)
+                    rel_path = PathRepr(root, file).relative_to(runfiles_dir)
                     print(f"  {rel_path}")
 
 

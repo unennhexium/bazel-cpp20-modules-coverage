@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING, Any, TypeGuard
 
 from more_itertools import windowed  # type: ignore[import-not-found]
 
+# from tool.arg.type import with_repr
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
@@ -11,6 +13,7 @@ if TYPE_CHECKING:
 type LineFilter = Callable[[Iterator[str], *Any], Iterator[str]]
 
 
+# @with_repr(lambda f: f.__name__)
 def dummy(stream: Iterator[str], *_rest: Any) -> Iterator[str]:
     yield from stream
 
@@ -28,5 +31,6 @@ def is_non_none_tuple[T](tup: tuple[T | None, ...]) -> TypeGuard[tuple[T, ...]]:
 def select[T](itor: Iterator[T], ranges: list[tuple[int, int]]) -> Iterator[T]:
     for ind, line in enumerate(itor):
         for up, down in ranges:
-            if down < ind < up:
+            if up <= ind and (down == -1 or ind < down):
                 yield line
+                break

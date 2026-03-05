@@ -5,14 +5,14 @@ from typing import NamedTuple
 from tool.line.line import Line
 
 
-class Delimiters(NamedTuple):
+class Delimiter(NamedTuple):
     open: str
     middle: str | None
     close: str
 
 
-MARKER = Delimiters("int ", None, ";\n")
-COMMENT = Delimiters("/* ", "#", " */\n")
+MARKER = Delimiter("int ", None, ";\n")
+COMMENT = Delimiter("/* ", "#", " */\n")
 
 
 class Marker(Line):

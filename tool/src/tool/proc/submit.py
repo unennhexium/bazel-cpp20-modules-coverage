@@ -5,12 +5,13 @@ from typing import TYPE_CHECKING
 
 from tool.lib.util import plural
 from tool.log.logger import logger
-from tool.proc.io import IO
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from concurrent.futures import Future, ThreadPoolExecutor
     from pathlib import Path
+
+    from tool.proc.io import IO
 
 
 def submit(

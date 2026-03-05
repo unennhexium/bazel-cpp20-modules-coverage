@@ -85,7 +85,7 @@ def test_pre(tool: Tool, file: Path):
         return orig(self, *args, **kwargs)
 
     with (
-        patch("sys.argv", ["-", "-s", "pre", "-o", "-", file.as_posix()]),
+        patch("sys.argv", ["-", "-s", "pre", "-i", file.as_posix()]),
         patch("os.environ", tool.env),
         patch("pathlib.Path.open", open_),
     ):
@@ -130,7 +130,7 @@ def test_mid(tool: Tool, file: Path):
         return orig(self, *args, **kwargs)
 
     with (
-        patch("sys.argv", ["-", "-s", "mid", "-o", "-", file.as_posix()]),
+        patch("sys.argv", ["-", "-s", "mid", "-i", file.as_posix()]),
         patch("os.environ", tool.env),
         patch("pathlib.Path.open", open_),
         patch("sys.exit", m_exit),
@@ -164,7 +164,7 @@ def test_mid_define(tool: Tool, file: Path):
     with (
         patch(
             "sys.argv",
-            ["-", "-s", "mid", "-D", "COVERAGE=1", "-o", "-", file.as_posix()],
+            ["-", "-s", "mid", "-D", "COVERAGE=1", "-i", file.as_posix()],
         ),
         patch("os.environ", tool.env),
         patch("pathlib.Path.open", open_),
@@ -196,7 +196,7 @@ def test_post(tool: Tool, file: Path):
     with (
         patch(
             "sys.argv",
-            ["-", "-s", "post", "-o", "-", file.as_posix()],
+            ["-", "-s", "post", "-i", file.as_posix()],
         ),
         patch("os.environ", tool.env),
         patch("pathlib.Path.open", open_),
@@ -227,7 +227,7 @@ def test_pipe(tool: Tool, file: Path):
     with (
         patch(
             "sys.argv",
-            ["-", "-s", "pre", "-o", "-", file.as_posix()],
+            ["-", "-s", "pre", "-i", file.as_posix()],
         ),
         patch("os.environ", tool.env),
         patch("pathlib.Path.open", open_),
@@ -241,7 +241,7 @@ def test_pipe(tool: Tool, file: Path):
     with (
         patch(
             "sys.argv",
-            ["-", "-s", "post", "-o", "-", "-"],
+            ["-", "-s", "post", "-i", "-"],
         ),
         patch("os.environ", tool.env),
         patch("pathlib.Path.open", open_),
@@ -268,7 +268,7 @@ def test_round_trip(tool: Tool, file: Path):
     with (
         patch(
             "sys.argv",
-            ["-", "-s", "pre", "post", "-o", "-", file.as_posix()],
+            ["-", "-s", "pre", "post", "-i", file.as_posix()],
         ),
         patch("os.environ", tool.env),
         patch("pathlib.Path.open", open_),
@@ -296,7 +296,7 @@ def test_full(tool: Tool, file: Path):
     with (
         patch(
             "sys.argv",
-            ["-", "-o", "-", file.as_posix()],
+            ["-", "-i", file.as_posix()],
         ),
         patch("os.environ", tool.env),
         patch("pathlib.Path.open", open_),
@@ -328,7 +328,7 @@ def test_full_define(tool: Tool, file: Path):
     with (
         patch(
             "sys.argv",
-            ["-", "-D", "COVERAGE", "-o", "-", file.as_posix()],
+            ["-", "-D", "COVERAGE", "-i", file.as_posix()],
         ),
         patch("os.environ", tool.env),
         patch("pathlib.Path.open", open_),
@@ -360,7 +360,7 @@ def test_full_no_keep(tool: Tool, file: Path):
     with (
         patch(
             "sys.argv",
-            ["-", "--no-keep", "-o", "-", file.as_posix()],
+            ["-", "--no-keep", "-i", file.as_posix()],
         ),
         patch("os.environ", tool.env),
         patch("pathlib.Path.open", open_),
@@ -391,7 +391,7 @@ def test_full_no_keep_define(tool: Tool, file: Path):
     with (
         patch(
             "sys.argv",
-            ["-", "--no-keep", "-D", "COVERAGE", "-o", "-", file.as_posix()],
+            ["-", "--no-keep", "-D", "COVERAGE", "-i", file.as_posix()],
         ),
         patch("os.environ", tool.env),
         patch("pathlib.Path.open", open_),
@@ -423,7 +423,7 @@ def test_stdin_cache(tool: Tool, file: Path):
     with (
         patch(
             "sys.argv",
-            ["-", "-", "-", "-o", "-", "-o", "-"],
+            ["-", "-i", "-", "-", "--", "-"],
         ),
         patch("os.environ", tool.env),
         patch("pathlib.Path.open", open_),
@@ -444,5 +444,36 @@ TEST(LibTest, HelloWorld) {
 }
 """
     err_str = ["[EXP]", lines, "[POST]", full, "[CALLS]", str(m_stdout.mock_calls)]
+    for e, r in zip(lines.split("\n"), full.split("\n"), strict=False):
+        assert e == r, "\n" + "\n\n".join((f"{e=}\n{r=}", *err_str))
+
+
+def test_rng(tool: Tool, file: Path):
+    orig = Path.open
+    m_stdout = mock_open()
+
+    def open_(self: Path, *args, **kwargs):
+        match self.as_posix():
+            case "/dev/stdout":
+                return m_stdout()
+        return orig(self, *args, **kwargs)
+
+    with (
+        patch(
+            "sys.argv",
+            ["-", "-r", "1,-1", "-i", file.as_posix()],
+        ),
+        patch("os.environ", tool.env),
+        patch("pathlib.Path.open", open_),
+    ):
+        main()
+    full = "".join(c.args[0] for c in m_stdout.return_value.write.call_args_list)
+    lines = """\
+import lib;
+TEST(LibTest, HelloWorld) {
+  EXPECT_EQ(greet(), "Hello, World!");
+}
+"""
+    err_str = ["[EXP]", lines, "[POST]", full]
     for e, r in zip(lines.split("\n"), full.split("\n"), strict=False):
         assert e == r, "\n" + "\n\n".join((f"{e=}\n{r=}", *err_str))

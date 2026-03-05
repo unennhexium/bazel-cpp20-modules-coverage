@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import sys
 from argparse import (
     ArgumentDefaultsHelpFormatter,
@@ -11,8 +10,15 @@ from argparse import (
 )
 from pathlib import Path
 
-from tool.arg.range import RangeAction
+from tool.arg.log import Color as ColorAction
+from tool.arg.log import level
+from tool.arg.path import PathIn, PathOut
+from tool.arg.stage import Stage
+from tool.arg.type import PathRepr
 from tool.log.const import Color
+from tool.stage.mid import mid
+from tool.stage.post import post
+from tool.stage.pre import pre
 
 
 class Formatter(RawDescriptionHelpFormatter, ArgumentDefaultsHelpFormatter): ...
@@ -98,6 +104,13 @@ def parse_arguments(log_levels: dict[str, int]) -> Namespace:
 
     {CG}-I{CR},{CC}--ibuff{CR} and {CG}-O{CC},{CC}--outbuf{CR} options require {CI}stdbuf{CR} executable to be in {CM}$PATH{CR}.
 
+    Providing negative argument to {CG}-W{CR},{CC}--width{CR} other than -1 results in left truncation
+    on that width's absolute value.
+
+    There is {CG}-i{CR} instead of {CG}-o{CR} option since {CI}argparse{CR} module evaluates
+    positional arguments last, while the number of inputs should be known at the time of
+    preparing outputs by design.
+
 {CB}CAVEATS{CR}
     The script processes input files into output files in pairs. If the number
     of input and output files deffer, the script will stop when the shortest
@@ -115,8 +128,8 @@ def parse_arguments(log_levels: dict[str, int]) -> Namespace:
     The exception is stdin input specified multiple times; in this case repeated
     output file arguments paired with stdin are processed sequentially but still
     in arbitrary order; since input (stdin) is the same for each pair, the same
-    should be the output, so the first available result is reused. That is, output
-    consist of repeated fragments, the order of which cannot be noticed.
+    should be the output, so the first available result is reused. That is,
+    output consist of repeated fragments, the order of which cannot be noticed.
         """,  # noqa: E501
         fromfile_prefix_chars="@",
         prefix_chars="-+",
@@ -132,27 +145,30 @@ def parse_arguments(log_levels: dict[str, int]) -> Namespace:
     grp_io = parser.add_argument_group("input and output files")
 
     grp_io.add_argument(
-        "input",
+        "-i",
+        "--input",
+        action=PathIn,
+        default=[PathRepr("/dev/stdin")],
         help=(
             f"input file path(s), use {CY}-{CR} to read from stdin; "
             f"prepend with {CY}@{CR} to treat as file to read input "
             "file paths from (one per-line)"
         ),
+        metavar="IN",
         nargs="+",
-        type=Path,
     )
 
     grp_io.add_argument(
-        "-o",
-        "--out",
-        action="append",
+        "out",
+        action=PathOut,
+        default=[PathRepr("/dev/stdout")],
         help=(
             f"output file path, use {CY}-{CR} to output to stdout; "
             f"prepend with {CY}@{CR} to treat as file to read output "
             "file paths from (one per-line)"
         ),
         metavar="OUT",
-        type=Path,
+        nargs="*",
     )
 
     grp_io.add_argument(
@@ -185,20 +201,14 @@ def parse_arguments(log_levels: dict[str, int]) -> Namespace:
         type=float,
     )
 
-    grp_io.add_argument(
-        "-t",
-        "--test",
-        action="store_true",
-        help=f"discard all output to {CM}/dev/null{CR}",
-    )
+    grp_stage = parser.add_argument_group("selecting stages")
 
-    grp_stages = parser.add_argument_group("selecting stages")
-
-    grp_stages.add_argument(
+    grp_stage.add_argument(
         "-s",
         "--stage",
+        action=Stage,
         choices=["pre", "mid", "post", "all", "none"],
-        default=["all"],
+        default=[pre, mid, post],
         help=(
             "what stages to run; "
             f"{CY}all{CR} overrides separate stages; "
@@ -207,7 +217,7 @@ def parse_arguments(log_levels: dict[str, int]) -> Namespace:
         nargs="+",
     )
 
-    grp_stages.add_argument(
+    grp_stage.add_argument(
         "-S",
         "--script",
         help=(
@@ -218,13 +228,27 @@ def parse_arguments(log_levels: dict[str, int]) -> Namespace:
 
     grp_sel = parser.add_argument_group("selecting lines")
 
-    grp_sel.register("action", "build_range_action", RangeAction)
+    grp_sel.add_argument(
+        "-a",
+        "--pattern",
+        default=[r"#[ \t]*include[ \t]+.*"],
+        help=(
+            "patterns to consider line a pragma to guard "
+            f"(default: guard {CM}#include{CR}-s)"
+        ),
+        metavar="PAT",
+        nargs="+",
+    )
 
     grp_sel.add_argument(
         "-r",
         "--range",
-        action="build_range_action",
-        help="process only specified line range(s) (default: process entire file)",
+        default=["0,-1"],
+        help=(
+            "process only specified line range(s); "
+            '-1 at upper bound means "to the end of file"'
+            "(default: process entire file) "
+        ),
         metavar="RANGE",
         nargs="+",
     )
@@ -292,56 +316,54 @@ def parse_arguments(log_levels: dict[str, int]) -> Namespace:
     grp_log.add_argument(
         "-l",
         "--log",
+        action=level(log_levels),
         choices=log_levels.keys(),
-        default="WARNING",
+        default=log_levels["WARNING"],
         help="minimal log level to output",
         metavar="LEVEL",
         type=log_levels.get,  # -> int | None
     )
 
     grp_log.add_argument(
-        "-C",
-        "--color",
-        default="auto",
-        choices=["auto", "never", "always"],
-        help="when color the logs",
-        metavar="WHEN",
-    )
-
-    grp_log.add_argument(
-        "-E",
-        "--truncate",
-        default="always",
-        choices=["always", "never", "custom"],
-        help=(
-            "when truncate the log line length; "
-            "default cuts logs from the right "
-            f"(see also {CG}-W{CR},{CC}--width{CR})"
-        ),
-        metavar="WHEN",
-    )
-
-    grp_log.add_argument(
         "-W",
         "--width",
+        default=0,
         help=(
-            "force terminal value to this value; "
-            "specifying '0' equal to '-E always', "
-            "while '-1' equal to '-E never "
-            f"(see also {CG}-T{CR},{CC}--truncate{CR})"
+            "assume terminal has provided width; "
+            f"{CY}0{CR} will get width from terminal, "
+            f"while {CY}-1{CR} will disable truncation "
         ),
         metavar="WIDTH",
         type=int,
     )
 
     grp_log.add_argument(
+        "-C",
+        "--color",
+        action=ColorAction,
+        choices=["auto", "never", "always"],
+        default="auto",
+        help="when color the logs",
+        metavar="WHEN",
+    )
+
+    grp_perf = parser.add_argument_group()
+
+    grp_perf.add_argument(
+        "-t",
+        "--test",
+        action="store_true",
+        help=f"discard all output to {CM}/dev/null{CR}",
+    )
+
+    grp_perf.add_argument(
         "-T",
         "--time",
         action="store_true",
         help=f"measure the execution time using {CM}timeit{CR} module",
     )
 
-    grp_log.add_argument(
+    grp_perf.add_argument(
         "-M",
         "--mem",
         action="store_true",
@@ -351,7 +373,7 @@ def parse_arguments(log_levels: dict[str, int]) -> Namespace:
         ),
     )
 
-    grp_log.add_argument(
+    grp_perf.add_argument(
         "-F",
         "--filter",
         choices=["self", "sub"],

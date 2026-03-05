@@ -8,7 +8,6 @@ from tool.lib.util import plural
 from tool.log.logger import logger
 
 if TYPE_CHECKING:
-    import re
     from collections.abc import Callable, Iterator
     from pathlib import Path
 
@@ -42,7 +41,6 @@ def filter_(
     path_in: Path,
     path_out: Path,
     args: Arguments,
-    re: re.Pattern,
     *,
     cache_stdin: bool = True,
 ) -> None:
@@ -80,8 +78,8 @@ def filter_(
 
         in_itor = logger_(in_itor)
         if args.raw.range is not None:
-            in_itor = select(file_in, args.raw.range)
-        res_itor = args.stages.pre(in_itor, re)
+            in_itor = select(file_in, args.sels.rng)
+        res_itor = args.stages.pre(in_itor, args.sels.pat)
         res_itor = args.stages.mid(res_itor, args)
         res_itor = stage_post(res_itor)
         for ind, line in enumerate(res_itor):

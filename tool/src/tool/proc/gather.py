@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from concurrent.futures import Future, as_completed
+from typing import TYPE_CHECKING
 
 from tool.lib.util import plural
 from tool.log.logger import logger
-from tool.proc.io import IO
+
+if TYPE_CHECKING:
+    from tool.proc.io import IO
 
 
 def gather(futures: dict[Future, IO]) -> None:

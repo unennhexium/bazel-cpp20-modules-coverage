@@ -38,11 +38,7 @@ class PopenContext(ContextDecorator):
             encoding="utf-8",
             shell=shell,
         )
-        for fd, no in zip(
-            (proc.stdin, proc.stdout, proc.stderr),
-            range(3),
-            strict=False,
-        ):
+        for fd, no in enumerate((proc.stdin, proc.stdout, proc.stderr)):
             if fd is None:
                 msg = f"fd #{no} is closed."
                 raise OSError(msg)
@@ -128,7 +124,7 @@ class PopenContext(ContextDecorator):
     def _reporter(self) -> None:
         assert self.proc.stderr is not None  # noqa: S101
         for line in self.proc.stderr:
-            logger.warning("(stderr):%s", line.rstrip())
+            logger.error("(stderr):%s", line.rstrip())
             self.q_err.put(line)
         self.proc.stderr.close()
         self.q_err.put(PopenContext.EOF)

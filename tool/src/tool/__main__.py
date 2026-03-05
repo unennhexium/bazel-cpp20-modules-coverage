@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import os
 import random
-import re
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING
@@ -24,7 +23,7 @@ if TYPE_CHECKING:
 
 def main():
     log_levels = {k: v for k, v in logging.__dict__.items() if k.isupper()}
-    args = Arguments(parse_arguments(log_levels), log_levels)
+    args = Arguments(parse_arguments(log_levels))
     init(args)
     logger.info("python:%s", sys.executable)
     logger.info("version:%s", sys.version)
@@ -44,10 +43,8 @@ def process(args: Arguments) -> None:
     logger.info("machine+app seed:%s", f"{seed=}")
     random.seed(seed)
 
-    rgx = re.compile(r"#[ \t]*include[ \t]+.*")
-
     def mapper(i: Path, o: Path) -> None:
-        filter_(i, o, args, rgx, cache_stdin=True)
+        filter_(i, o, args, cache_stdin=True)
 
     is_py_3_13_or_above = sys.version_info >= (3, 13, 0)
     logger.info("GIL:%s", is_py_3_13_or_above and sys._is_gil_enabled())  # noqa: SLF001
